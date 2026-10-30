@@ -41,6 +41,12 @@ server:
   servlet:
     context-path: /
 
+security:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    access-token-expiration: 900000 # 15m in ms
+    refresh-token-expiration: 604800000 # 7d in ms
+
 management:
   endpoints:
     web:
