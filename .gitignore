@@ -1,6 +1,8 @@
 # Java / Maven
 backend/target/
 backend/.mvn/
+target/
+.mvn/
 *.class
 *.jar
 *.war
@@ -9,6 +11,8 @@ backend/.mvn/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+node_modules/
+dist/
 
 # IDE
 .idea/
