@@ -5,6 +5,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { CommunitiesPage } from './pages/CommunitiesPage';
+import { CommunityDetailPage } from './pages/CommunityDetailPage';
 
 export const App: React.FC = () => {
   return (
@@ -18,6 +20,22 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/communities"
+            element={
+              <ProtectedRoute>
+                <CommunitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/communities/:id"
+            element={
+              <ProtectedRoute>
+                <CommunityDetailPage />
               </ProtectedRoute>
             }
           />

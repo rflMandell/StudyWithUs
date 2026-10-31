@@ -1,16 +1,49 @@
 import React from 'react';
-import { BookOpen, LogOut, Award, User as UserIcon } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { BookOpen, LogOut, Award, User as UserIcon, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
 
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <div className="navbar-brand">
-          <BookOpen size={24} />
-          <span>StudyWithUs</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <Link to="/" className="navbar-brand">
+            <BookOpen size={24} />
+            <span>StudyWithUs</span>
+          </Link>
+
+          {user && (
+            <nav style={{ display: 'flex', gap: '1rem' }}>
+              <Link
+                to="/"
+                style={{
+                  fontWeight: 500,
+                  fontSize: '0.925rem',
+                  color: location.pathname === '/' ? 'var(--primary)' : 'var(--text-muted)',
+                }}
+              >
+                Início
+              </Link>
+              <Link
+                to="/communities"
+                style={{
+                  fontWeight: 500,
+                  fontSize: '0.925rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  color: location.pathname.startsWith('/communities') ? 'var(--primary)' : 'var(--text-muted)',
+                }}
+              >
+                <Users size={16} />
+                <span>Comunidades</span>
+              </Link>
+            </nav>
+          )}
         </div>
 
         {user && (
