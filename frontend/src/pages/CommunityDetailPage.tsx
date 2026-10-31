@@ -1,18 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Users, Globe, Lock, ShieldCheck, UserPlus, LogOut } from 'lucide-react';
-import { Community, CommunityMember } from '../types/community';
+import {
+  ArrowLeft,
+  Users,
+  Globe,
+  Lock,
+  ShieldCheck,
+  UserPlus,
+  LogOut,
+  Check,
+  X,
+  UserMinus,
+  Settings,
+} from 'lucide-react';
+import { Community, CommunityJoinRequest, CommunityMember, CommunityRole } from '../types/community';
 import { communityService } from '../services/communityService';
 import { Navbar } from '../components/Navbar';
 import { AlertError } from '../components/AlertError';
+import { useAuth } from '../hooks/useAuth';
 
 export const CommunityDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [joinRequests, setJoinRequests] = useState<CommunityJoinRequest[]>([]);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
+
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isOwner = community?.currentUserRole === 'OWNER';
+  const isAdmin = community?.currentUserRole === 'ADMIN' || isOwner;
 
   const loadData = async (commId: string) => {
     setIsLoading(true);
@@ -24,6 +46,11 @@ export const CommunityDetailPage: React.FC = () => {
       ]);
       setCommunity(commData);
       setMembers(membersData.content);
+
+      if (commData.currentUserRole === 'OWNER' || commData.currentUserRole === 'ADMIN') {
+        const requestsData = await communityService.listJoinRequests(commId);
+        setJoinRequests(requestsData.content);
+      }
     } catch (err: any) {
       setError('Não foi possível carregar os detalhes da comunidade.');
     } finally {
@@ -40,12 +67,32 @@ export const CommunityDetailPage: React.FC = () => {
   const handleJoin = async () => {
     if (!community) return;
     setActionLoading(true);
+    setError(null);
     try {
       await communityService.joinCommunity(community.id);
       await loadData(community.id);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao participar.';
-      alert(msg);
+      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao participar da comunidade.';
+      setError(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRequestJoin = async () => {
+    if (!community) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await communityService.requestJoin(community.id);
+      setHasPendingRequest(true);
+      alert('Solicitação de entrada enviada com sucesso! Aguarde a aprovação de um administrador.');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao solicitar entrada.';
+      if (err.response?.data?.code === 'JOIN_REQUEST_ALREADY_PENDING') {
+        setHasPendingRequest(true);
+      }
+      setError(msg);
     } finally {
       setActionLoading(false);
     }
@@ -56,15 +103,82 @@ export const CommunityDetailPage: React.FC = () => {
     if (!confirm('Deseja realmente sair desta comunidade?')) return;
 
     setActionLoading(true);
+    setError(null);
     try {
       await communityService.leaveCommunity(community.id);
       await loadData(community.id);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao sair.';
-      alert(msg);
+      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao sair da comunidade.';
+      setError(msg);
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    if (!community) return;
+    setActionLoading(true);
+    try {
+      await communityService.approveJoinRequest(community.id, requestId);
+      await loadData(community.id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao aprovar solicitação.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    if (!community) return;
+    setActionLoading(true);
+    try {
+      await communityService.rejectJoinRequest(community.id, requestId);
+      await loadData(community.id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao rejeitar solicitação.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async (targetUserId: string, newRole: CommunityRole) => {
+    if (!community) return;
+    if (newRole === 'OWNER' && !confirm('Transferir a posse da comunidade para outro usuário tornará você um administrador. Deseja continuar?')) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await communityService.updateMemberRole(community.id, targetUserId, newRole);
+      await loadData(community.id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao alterar papel.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (targetUserId: string, memberName: string) => {
+    if (!community) return;
+    if (!confirm(`Deseja remover o membro "${memberName}" da comunidade?`)) return;
+
+    setActionLoading(true);
+    try {
+      await communityService.removeMember(community.id, targetUserId);
+      await loadData(community.id);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erro ao remover membro.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const canManageMember = (targetMember: CommunityMember) => {
+    if (!isAdmin) return false;
+    if (targetMember.userId === user?.id) return false;
+    if (targetMember.role === 'OWNER') return false;
+    if (community?.currentUserRole === 'ADMIN' && targetMember.role === 'ADMIN') return false;
+    return true;
   };
 
   return (
@@ -126,8 +240,20 @@ export const CommunityDetailPage: React.FC = () => {
                         <UserPlus size={18} />
                         <span>{actionLoading ? 'Entrando...' : 'Participar da Comunidade'}</span>
                       </button>
+                    ) : hasPendingRequest ? (
+                      <span className="user-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '0.5rem 0.8rem', fontSize: '0.9rem' }}>
+                        Solicitação Enviada (Pendente)
+                      </span>
                     ) : (
-                      <span className="user-badge">Comunidade Privada</span>
+                      <button
+                        onClick={handleRequestJoin}
+                        disabled={actionLoading}
+                        className="btn btn-primary"
+                        style={{ width: 'auto', gap: '0.4rem', backgroundColor: '#d97706' }}
+                      >
+                        <Lock size={18} />
+                        <span>{actionLoading ? 'Solicitando...' : 'Solicitar Entrada'}</span>
+                      </button>
                     )
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -152,52 +278,181 @@ export const CommunityDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <Users size={20} color="var(--primary)" />
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Membros ({community.membersCount})</h2>
+            {isAdmin && (
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                <button
+                  onClick={() => setActiveTab('members')}
+                  className="btn"
+                  style={{
+                    width: 'auto',
+                    backgroundColor: activeTab === 'members' ? 'var(--primary)' : 'transparent',
+                    color: activeTab === 'members' ? '#fff' : 'var(--text-muted)',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Users size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                  Membros ({community.membersCount})
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('requests')}
+                  className="btn"
+                  style={{
+                    width: 'auto',
+                    backgroundColor: activeTab === 'requests' ? 'var(--primary)' : 'transparent',
+                    color: activeTab === 'requests' ? '#fff' : 'var(--text-muted)',
+                    border: 'none',
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <Settings size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                  Solicitações Pendentes ({joinRequests.length})
+                </button>
               </div>
+            )}
 
-              {members.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhum membro listado.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {members.map((member) => (
-                    <div
-                      key={member.userId}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        backgroundColor: '#f8fafc',
-                        borderRadius: '6px',
-                        border: '1px solid var(--border)',
-                      }}
-                    >
-                      <div>
-                        <p style={{ fontWeight: 600 }}>{member.name}</p>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>@{member.username}</p>
-                      </div>
+            {activeTab === 'requests' && isAdmin ? (
+              <div className="card">
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.25rem' }}>
+                  Solicitações de Entrada Pendentes
+                </h2>
 
-                      <span
-                        className="user-badge"
+                {joinRequests.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhuma solicitação pendente no momento.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {joinRequests.map((req) => (
+                      <div
+                        key={req.id}
                         style={{
-                          backgroundColor: member.role === 'OWNER' ? '#fef3c7' : '#eef2ff',
-                          color: member.role === 'OWNER' ? '#92400e' : '#4338ca',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: '0.3rem',
+                          justifyContent: 'space-between',
+                          padding: '0.85rem 1.25rem',
+                          backgroundColor: '#fffbeb',
+                          borderRadius: '8px',
+                          border: '1px solid #fde68a',
                         }}
                       >
-                        {member.role === 'OWNER' && <ShieldCheck size={14} />}
-                        {member.role}
-                      </span>
-                    </div>
-                  ))}
+                        <div>
+                          <p style={{ fontWeight: 600 }}>Usuário: {req.userId}</p>
+                          <p style={{ fontSize: '0.8rem', color: '#92400e' }}>
+                            Solicitado em: {new Date(req.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => handleApproveRequest(req.id)}
+                            disabled={actionLoading}
+                            className="btn btn-primary"
+                            style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.3rem', backgroundColor: '#059669' }}
+                          >
+                            <Check size={16} />
+                            <span>Aprovar</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleRejectRequest(req.id)}
+                            disabled={actionLoading}
+                            className="btn btn-secondary"
+                            style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.3rem', color: '#dc2626' }}
+                          >
+                            <X size={16} />
+                            <span>Rejeitar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                  <Users size={20} color="var(--primary)" />
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Membros ({community.membersCount})</h2>
                 </div>
-              )}
-            </div>
+
+                {members.length === 0 ? (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhum membro listado.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {members.map((member) => (
+                      <div
+                        key={member.userId}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border)',
+                          flexWrap: 'wrap',
+                          gap: '0.75rem',
+                        }}
+                      >
+                        <div>
+                          <p style={{ fontWeight: 600 }}>{member.name}</p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>@{member.username}</p>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span
+                            className="user-badge"
+                            style={{
+                              backgroundColor:
+                                member.role === 'OWNER' ? '#fef3c7' : member.role === 'ADMIN' ? '#e0e7ff' : '#f1f5f9',
+                              color:
+                                member.role === 'OWNER' ? '#92400e' : member.role === 'ADMIN' ? '#3730a3' : '#475569',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                            }}
+                          >
+                            {member.role === 'OWNER' && <ShieldCheck size={14} />}
+                            {member.role}
+                          </span>
+
+                          {canManageMember(member) && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <select
+                                className="form-control"
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: 'auto' }}
+                                value={member.role}
+                                onChange={(e) => handleUpdateRole(member.userId, e.target.value as CommunityRole)}
+                                disabled={actionLoading}
+                              >
+                                <option value="MEMBER">MEMBER</option>
+                                <option value="MODERATOR">MODERATOR</option>
+                                {isOwner && <option value="ADMIN">ADMIN</option>}
+                                {isOwner && <option value="OWNER">Transferir OWNER</option>}
+                              </select>
+
+                              <button
+                                onClick={() => handleRemoveMember(member.userId, member.name)}
+                                disabled={actionLoading}
+                                title="Remover membro"
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.5rem', width: 'auto', color: '#dc2626' }}
+                              >
+                                <UserMinus size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : null}
       </main>

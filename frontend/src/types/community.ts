@@ -1,6 +1,7 @@
 export type CommunityVisibility = 'PUBLIC' | 'PRIVATE';
 export type CommunityRole = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER';
 export type MemberStatus = 'ACTIVE' | 'LEFT' | 'BANNED';
+export type JoinRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface Community {
   id: string;
@@ -25,6 +26,16 @@ export interface CommunityMember {
   role: CommunityRole;
   status: MemberStatus;
   joinedAt: string;
+}
+
+export interface CommunityJoinRequest {
+  id: string;
+  communityId: string;
+  userId: string;
+  status: JoinRequestStatus;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
 }
 
 export interface CreateCommunityData {

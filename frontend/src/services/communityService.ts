@@ -1,5 +1,13 @@
 import { api } from './api';
-import { Community, CommunityMember, CreateCommunityData, PagedResponse } from '../types/community';
+import {
+  Community,
+  CommunityJoinRequest,
+  CommunityMember,
+  CommunityRole,
+  CreateCommunityData,
+  JoinRequestStatus,
+  PagedResponse,
+} from '../types/community';
 
 export const communityService = {
   async listCommunities(search?: string, page = 0, size = 20): Promise<PagedResponse<Community>> {
@@ -35,5 +43,45 @@ export const communityService = {
       params: { page, size },
     });
     return response.data;
+  },
+
+  async requestJoin(communityId: string): Promise<CommunityJoinRequest> {
+    const response = await api.post<CommunityJoinRequest>(`/communities/${communityId}/join-requests`);
+    return response.data;
+  },
+
+  async listJoinRequests(
+    communityId: string,
+    status: JoinRequestStatus = 'PENDING',
+    page = 0,
+    size = 20
+  ): Promise<PagedResponse<CommunityJoinRequest>> {
+    const response = await api.get<PagedResponse<CommunityJoinRequest>>(`/communities/${communityId}/join-requests`, {
+      params: { status, page, size },
+    });
+    return response.data;
+  },
+
+  async approveJoinRequest(communityId: string, requestId: string): Promise<CommunityJoinRequest> {
+    const response = await api.post<CommunityJoinRequest>(
+      `/communities/${communityId}/join-requests/${requestId}/approve`
+    );
+    return response.data;
+  },
+
+  async rejectJoinRequest(communityId: string, requestId: string): Promise<CommunityJoinRequest> {
+    const response = await api.post<CommunityJoinRequest>(
+      `/communities/${communityId}/join-requests/${requestId}/reject`
+    );
+    return response.data;
+  },
+
+  async updateMemberRole(communityId: string, userId: string, role: CommunityRole): Promise<CommunityMember> {
+    const response = await api.put<CommunityMember>(`/communities/${communityId}/members/${userId}/role`, { role });
+    return response.data;
+  },
+
+  async removeMember(communityId: string, userId: string): Promise<void> {
+    await api.delete(`/communities/${communityId}/members/${userId}`);
   },
 };

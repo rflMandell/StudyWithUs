@@ -28,15 +28,28 @@ public class CommunityMember {
     }
 
     public boolean isOwner() {
-        return role == CommunityRole.OWNER;
+        return isActive() && role == CommunityRole.OWNER;
     }
 
     public boolean isAdmin() {
-        return role == CommunityRole.OWNER || role == CommunityRole.ADMIN;
+        return isActive() && (role == CommunityRole.OWNER || role == CommunityRole.ADMIN);
+    }
+
+    public boolean isModeratorOrHigher() {
+        return isActive() && (role == CommunityRole.OWNER || role == CommunityRole.ADMIN || role == CommunityRole.MODERATOR);
     }
 
     public void leave() {
         this.status = MemberStatus.LEFT;
         this.leftAt = Instant.now();
+    }
+
+    public void remove() {
+        this.status = MemberStatus.LEFT;
+        this.leftAt = Instant.now();
+    }
+
+    public void changeRole(CommunityRole newRole) {
+        this.role = newRole;
     }
 }
