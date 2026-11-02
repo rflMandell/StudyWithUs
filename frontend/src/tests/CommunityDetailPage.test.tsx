@@ -3,8 +3,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CommunityDetailPage } from '../pages/CommunityDetailPage';
 import { communityService } from '../services/communityService';
+import { checkinService } from '../services/checkinService';
 import { AuthContext, AuthContextType } from '../context/AuthContext';
 import { Community, CommunityJoinRequest, CommunityMember } from '../types/community';
+import { Checkin } from '../types/checkin';
 
 vi.mock('../services/communityService', () => ({
   communityService: {
@@ -18,6 +20,15 @@ vi.mock('../services/communityService', () => ({
     joinCommunity: vi.fn(),
     requestJoin: vi.fn(),
     leaveCommunity: vi.fn(),
+  },
+}));
+
+vi.mock('../services/checkinService', () => ({
+  checkinService: {
+    listCommunityCheckins: vi.fn(),
+    createCheckin: vi.fn(),
+    deleteCheckin: vi.fn(),
+    getCheckinDetails: vi.fn(),
   },
 }));
 
@@ -86,6 +97,18 @@ const mockJoinRequests: CommunityJoinRequest[] = [
   },
 ];
 
+const mockCheckins: Checkin[] = [
+  {
+    id: 'checkin-1',
+    userId: 'owner-id',
+    communityId: 'comm-10',
+    caption: 'Estudo do modelo OSI finalizado',
+    mediaKeys: ['osi_layer.png'],
+    createdAt: '2026-10-31T13:00:00Z',
+    updatedAt: '2026-10-31T13:00:00Z',
+  },
+];
+
 const renderDetail = () => {
   return render(
     <MemoryRouter initialEntries={['/communities/comm-10']}>
@@ -101,9 +124,17 @@ const renderDetail = () => {
 describe('CommunityDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(checkinService.listCommunityCheckins).mockResolvedValue({
+      content: mockCheckins,
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+      hasNext: false,
+    });
   });
 
-  it('renders community details, member list, and owner tabs', async () => {
+  it('renders community details, check-in feed, and owner tabs', async () => {
     vi.mocked(communityService.getCommunityDetails).mockResolvedValue(mockCommunity);
     vi.mocked(communityService.listMembers).mockResolvedValue({
       content: mockMembers,
@@ -127,7 +158,7 @@ describe('CommunityDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Comunidade de Redes')).toBeInTheDocument();
       expect(screen.getByText('Estudos de arquitetura de redes')).toBeInTheDocument();
-      expect(screen.getByText('Bob Colleague')).toBeInTheDocument();
+      expect(screen.getByText('Estudo do modelo OSI finalizado')).toBeInTheDocument();
       expect(screen.getByText(/Solicitações Pendentes \(1\)/)).toBeInTheDocument();
     });
   });
@@ -171,6 +202,56 @@ describe('CommunityDetailPage', () => {
 
     await waitFor(() => {
       expect(communityService.approveJoinRequest).toHaveBeenCalledWith('comm-10', 'req-1');
+    });
+  });
+
+  it('allows member to publish a new check-in', async () => {
+    vi.mocked(communityService.getCommunityDetails).mockResolvedValue(mockCommunity);
+    vi.mocked(communityService.listMembers).mockResolvedValue({
+      content: mockMembers,
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      totalPages: 1,
+      hasNext: false,
+    });
+    vi.mocked(communityService.listJoinRequests).mockResolvedValue({
+      content: mockJoinRequests,
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+      hasNext: false,
+    });
+    vi.mocked(checkinService.createCheckin).mockResolvedValue({
+      id: 'checkin-2',
+      userId: 'owner-id',
+      communityId: 'comm-10',
+      caption: 'Estudo de TCP/IP',
+      createdAt: '2026-10-31T14:00:00Z',
+      updatedAt: '2026-10-31T14:00:00Z',
+    });
+
+    renderDetail();
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/O que você estudou hoje\?/)).toBeInTheDocument();
+    });
+
+    const textarea = screen.getByPlaceholderText(/O que você estudou hoje\?/);
+    fireEvent.change(textarea, { target: { value: 'Estudo de TCP/IP' } });
+
+    const submitBtn = screen.getByText('Publicar Check-in');
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(checkinService.createCheckin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          communityId: 'comm-10',
+          caption: 'Estudo de TCP/IP',
+        }),
+        expect.any(String)
+      );
     });
   });
 });

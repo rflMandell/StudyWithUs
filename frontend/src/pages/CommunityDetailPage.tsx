@@ -12,11 +12,13 @@ import {
   X,
   UserMinus,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 import { Community, CommunityJoinRequest, CommunityMember, CommunityRole } from '../types/community';
 import { communityService } from '../services/communityService';
 import { Navbar } from '../components/Navbar';
 import { AlertError } from '../components/AlertError';
+import { CheckinFeed } from '../components/CheckinFeed';
 import { useAuth } from '../hooks/useAuth';
 
 export const CommunityDetailPage: React.FC = () => {
@@ -27,7 +29,7 @@ export const CommunityDetailPage: React.FC = () => {
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [joinRequests, setJoinRequests] = useState<CommunityJoinRequest[]>([]);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
-  const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
+  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'requests'>('feed');
 
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -35,6 +37,7 @@ export const CommunityDetailPage: React.FC = () => {
 
   const isOwner = community?.currentUserRole === 'OWNER';
   const isAdmin = community?.currentUserRole === 'ADMIN' || isOwner;
+  const isMember = !!community?.currentUserRole;
 
   const loadData = async (commId: string) => {
     setIsLoading(true);
@@ -278,25 +281,42 @@ export const CommunityDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {isAdmin && (
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                <button
-                  onClick={() => setActiveTab('members')}
-                  className="btn"
-                  style={{
-                    width: 'auto',
-                    backgroundColor: activeTab === 'members' ? 'var(--primary)' : 'transparent',
-                    color: activeTab === 'members' ? '#fff' : 'var(--text-muted)',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  <Users size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
-                  Membros ({community.membersCount})
-                </button>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setActiveTab('feed')}
+                className="btn"
+                style={{
+                  width: 'auto',
+                  backgroundColor: activeTab === 'feed' ? 'var(--primary)' : 'transparent',
+                  color: activeTab === 'feed' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                }}
+              >
+                <BookOpen size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                Check-ins & Feed
+              </button>
 
+              <button
+                onClick={() => setActiveTab('members')}
+                className="btn"
+                style={{
+                  width: 'auto',
+                  backgroundColor: activeTab === 'members' ? 'var(--primary)' : 'transparent',
+                  color: activeTab === 'members' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                }}
+              >
+                <Users size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                Membros ({community.membersCount})
+              </button>
+
+              {isAdmin && (
                 <button
                   onClick={() => setActiveTab('requests')}
                   className="btn"
@@ -313,10 +333,20 @@ export const CommunityDetailPage: React.FC = () => {
                   <Settings size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
                   Solicitações Pendentes ({joinRequests.length})
                 </button>
-              </div>
+              )}
+            </div>
+
+            {activeTab === 'feed' && (
+              <CheckinFeed
+                communityId={community.id}
+                isMember={isMember}
+                currentUserRole={community.currentUserRole}
+                currentUserId={user?.id}
+                members={members}
+              />
             )}
 
-            {activeTab === 'requests' && isAdmin ? (
+            {activeTab === 'requests' && isAdmin && (
               <div className="card">
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.25rem' }}>
                   Solicitações de Entrada Pendentes
@@ -372,7 +402,9 @@ export const CommunityDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            ) : (
+            )}
+
+            {activeTab === 'members' && (
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
                   <Users size={20} color="var(--primary)" />
