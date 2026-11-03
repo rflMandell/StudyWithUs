@@ -11,4 +11,5 @@ public interface CommunityMemberRepository {
     boolean isUserActiveMember(UUID communityId, UUID userId);
     long countActiveMembers(UUID communityId);
     PagedResult<CommunityMember> findActiveMembers(UUID communityId, int page, int size);
+    java.util.List<UUID> findActiveCommunityIdsByUserId(UUID userId);
 }

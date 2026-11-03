@@ -10,4 +10,5 @@ public interface CommunityRepository {
     Optional<Community> findById(UUID id);
     boolean existsByNameIgnoreCase(String name);
     PagedResult<Community> findPublicCommunities(String search, int page, int size);
+    java.util.List<Community> findAllById(Iterable<UUID> ids);
 }

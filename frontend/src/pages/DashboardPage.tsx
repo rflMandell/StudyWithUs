@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Award, School, Sparkles, CheckCircle2, History, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Navbar } from '../components/Navbar';
+import { ActivityFeed } from '../components/ActivityFeed';
 import { PointTransaction, UserPointsSummary } from '../types/points';
 import { pointsService } from '../services/pointsService';
 
@@ -85,6 +86,8 @@ export const DashboardPage: React.FC = () => {
             </ul>
           </div>
         </div>
+
+        <ActivityFeed />
 
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>

@@ -58,4 +58,9 @@ public class CommunityMemberRepositoryAdapter implements CommunityMemberReposito
                 entities.hasNext()
         );
     }
+
+    @Override
+    public java.util.List<UUID> findActiveCommunityIdsByUserId(UUID userId) {
+        return springDataCommunityMemberRepository.findActiveCommunityIdsByUserId(userId);
+    }
 }

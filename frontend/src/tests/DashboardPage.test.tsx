@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DashboardPage } from '../pages/DashboardPage';
 import { pointsService } from '../services/pointsService';
+import { feedService } from '../services/feedService';
 import { AuthContext, AuthContextType } from '../context/AuthContext';
 import { PointTransaction } from '../types/points';
 
@@ -10,6 +11,12 @@ vi.mock('../services/pointsService', () => ({
   pointsService: {
     getPointsSummary: vi.fn(),
     getPointsHistory: vi.fn(),
+  },
+}));
+
+vi.mock('../services/feedService', () => ({
+  feedService: {
+    getFeed: vi.fn(),
   },
 }));
 
@@ -82,6 +89,24 @@ describe('DashboardPage', () => {
       totalPages: 1,
       hasNext: false,
     });
+    vi.mocked(feedService.getFeed).mockResolvedValue({
+      content: [
+        {
+          id: 'checkin-feed-1',
+          userId: 'author-1',
+          authorUsername: 'alice',
+          authorName: 'Alice Silva',
+          authorAvatarUrl: null,
+          communityId: 'comm-1',
+          communityName: 'Comunidade Java',
+          caption: 'Estudo concluído sobre JPA e PostgreSQL!',
+          mediaKeys: [],
+          createdAt: '2026-11-03T10:00:00Z',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
 
     renderPage();
 
@@ -89,10 +114,13 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Unicamp')).toBeInTheDocument();
 
     await waitFor(() => {
+      expect(screen.getByText('Feed de Atividades dos Seus Grupos')).toBeInTheDocument();
+      expect(screen.getByText('Estudo concluído sobre JPA e PostgreSQL!')).toBeInTheDocument();
+      expect(screen.getByText('Comunidade Java')).toBeInTheDocument();
       expect(screen.getByText('Extrato de Pontos')).toBeInTheDocument();
       expect(screen.getByText('Check-in Realizado')).toBeInTheDocument();
       expect(screen.getByText('Estorno de Check-in')).toBeInTheDocument();
-      expect(screen.getByText('+10 pts')).toBeInTheDocument();
+      expect(screen.getAllByText('+10 pts').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('-10 pts')).toBeInTheDocument();
     });
   });

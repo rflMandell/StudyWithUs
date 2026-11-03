@@ -52,4 +52,12 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
                 entities.hasNext()
         );
     }
+
+    @Override
+    public java.util.List<Community> findAllById(Iterable<UUID> ids) {
+        return springDataCommunityRepository.findAllById(ids)
+                .stream()
+                .map(CommunityJpaEntity::toDomain)
+                .toList();
+    }
 }

@@ -30,4 +30,7 @@ public interface SpringDataCommunityMemberRepository extends JpaRepository<Commu
             @Param("status") MemberStatus status,
             Pageable pageable
     );
+
+    @Query("SELECT cm.id.communityId FROM CommunityMemberJpaEntity cm WHERE cm.id.userId = :userId AND cm.status = 'ACTIVE'")
+    java.util.List<UUID> findActiveCommunityIdsByUserId(@Param("userId") UUID userId);
 }

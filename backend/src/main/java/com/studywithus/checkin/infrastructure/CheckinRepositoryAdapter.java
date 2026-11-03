@@ -6,8 +6,12 @@ import com.studywithus.shared.domain.PagedResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,5 +73,43 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
                 resultPage.getTotalPages(),
                 resultPage.hasNext()
         );
+    }
+
+    @Override
+    public List<Checkin> findFeedCheckins(
+            Collection<UUID> communityIds,
+            Collection<UUID> followingIds,
+            Instant cursor,
+            int limit
+    ) {
+        boolean hasCommunities = communityIds != null && !communityIds.isEmpty();
+        boolean hasFollowing = followingIds != null && !followingIds.isEmpty();
+
+        if (!hasCommunities && !hasFollowing) {
+            return Collections.emptyList();
+        }
+
+        Pageable pageable = PageRequest.of(0, limit);
+        List<CheckinJpaEntity> entities;
+
+        if (cursor == null) {
+            if (hasCommunities && hasFollowing) {
+                entities = repository.findFeedByCommunitiesAndFollowing(communityIds, followingIds, pageable);
+            } else if (hasCommunities) {
+                entities = repository.findFeedByCommunities(communityIds, pageable);
+            } else {
+                entities = repository.findFeedByFollowing(followingIds, pageable);
+            }
+        } else {
+            if (hasCommunities && hasFollowing) {
+                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursor, pageable);
+            } else if (hasCommunities) {
+                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursor, pageable);
+            } else {
+                entities = repository.findFeedByFollowingWithCursor(followingIds, cursor, pageable);
+            }
+        }
+
+        return entities.stream().map(CheckinJpaEntity::toDomain).toList();
     }
 }
