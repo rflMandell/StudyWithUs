@@ -5,6 +5,7 @@ import { CommunityDetailPage } from '../pages/CommunityDetailPage';
 import { communityService } from '../services/communityService';
 import { checkinService } from '../services/checkinService';
 import { rankingService } from '../services/rankingService';
+import { streakService } from '../services/streakService';
 import { AuthContext, AuthContextType } from '../context/AuthContext';
 import { Community, CommunityJoinRequest, CommunityMember } from '../types/community';
 import { Checkin } from '../types/checkin';
@@ -38,6 +39,12 @@ vi.mock('../services/rankingService', () => ({
   rankingService: {
     getCommunityRanking: vi.fn(),
     getMyRankingPosition: vi.fn(),
+  },
+}));
+
+vi.mock('../services/streakService', () => ({
+  streakService: {
+    getCommunityStreak: vi.fn(),
   },
 }));
 
@@ -181,6 +188,13 @@ describe('CommunityDetailPage', () => {
       position: 1,
       streakAtUpdate: 2,
     });
+    vi.mocked(streakService.getCommunityStreak).mockResolvedValue({
+      communityId: 'comm-10',
+      userId: 'owner-id',
+      currentStreak: 5,
+      longestStreak: 12,
+      lastActivityDate: '2026-11-03',
+    });
   });
 
   it('renders community details, check-in feed, and owner tabs', async () => {
@@ -207,6 +221,7 @@ describe('CommunityDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Comunidade de Redes')).toBeInTheDocument();
       expect(screen.getByText('Estudos de arquitetura de redes')).toBeInTheDocument();
+      expect(screen.getByText('5 dias de sequência')).toBeInTheDocument();
       expect(screen.getByText('Estudo do modelo OSI finalizado')).toBeInTheDocument();
       expect(screen.getByText(/Solicitações Pendentes \(1\)/)).toBeInTheDocument();
     });

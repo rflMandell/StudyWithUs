@@ -14,9 +14,12 @@ import {
   Settings,
   BookOpen,
   Trophy,
+  Flame,
 } from 'lucide-react';
 import { Community, CommunityJoinRequest, CommunityMember, CommunityRole } from '../types/community';
+import { CommunityStreak } from '../types/streak';
 import { communityService } from '../services/communityService';
+import { streakService } from '../services/streakService';
 import { Navbar } from '../components/Navbar';
 import { AlertError } from '../components/AlertError';
 import { CheckinFeed } from '../components/CheckinFeed';
@@ -30,6 +33,7 @@ export const CommunityDetailPage: React.FC = () => {
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [joinRequests, setJoinRequests] = useState<CommunityJoinRequest[]>([]);
+  const [communityStreak, setCommunityStreak] = useState<CommunityStreak | null>(null);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [activeTab, setActiveTab] = useState<'feed' | 'ranking' | 'members' | 'requests'>('feed');
 
@@ -55,6 +59,15 @@ export const CommunityDetailPage: React.FC = () => {
       if (commData.currentUserRole === 'OWNER' || commData.currentUserRole === 'ADMIN') {
         const requestsData = await communityService.listJoinRequests(commId);
         setJoinRequests(requestsData.content);
+      }
+
+      if (commData.currentUserRole) {
+        try {
+          const streakData = await streakService.getCommunityStreak(commId);
+          setCommunityStreak(streakData);
+        } catch {
+          // ignore
+        }
       }
     } catch (err: any) {
       setError('Não foi possível carregar os detalhes da comunidade.');
@@ -225,6 +238,31 @@ export const CommunityDetailPage: React.FC = () => {
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                       Fuso: {community.timezone}
                     </span>
+
+                    {isMember && communityStreak && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          backgroundColor: '#fff7ed',
+                          color: '#c2410c',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          border: '1px solid #fed7aa',
+                        }}
+                      >
+                        <Flame size={14} color="#ea580c" />
+                        <span>{communityStreak.currentStreak} {communityStreak.currentStreak === 1 ? 'dia de sequência' : 'dias de sequência'}</span>
+                        {communityStreak.longestStreak > 0 && (
+                          <span style={{ color: '#9a3412', fontWeight: 500, fontSize: '0.75rem' }}>
+                            (Recorde: {communityStreak.longestStreak})
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </div>
 
                   <h1 style={{ fontSize: '1.85rem', fontWeight: 700 }}>{community.name}</h1>
