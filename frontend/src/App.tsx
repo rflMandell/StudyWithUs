@@ -8,11 +8,13 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CommunitiesPage } from './pages/CommunitiesPage';
 import { CommunityDetailPage } from './pages/CommunityDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { RealtimeNotificationToast } from './components/RealtimeNotificationToast';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <RealtimeNotificationToast />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />

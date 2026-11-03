@@ -33,6 +33,9 @@ class UpdateCommunityRankingUseCaseTest {
     @Mock
     private RankingEntryRepository rankingEntryRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private UpdateCommunityRankingUseCase updateCommunityRankingUseCase;
 
