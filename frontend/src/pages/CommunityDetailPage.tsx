@@ -13,12 +13,14 @@ import {
   UserMinus,
   Settings,
   BookOpen,
+  Trophy,
 } from 'lucide-react';
 import { Community, CommunityJoinRequest, CommunityMember, CommunityRole } from '../types/community';
 import { communityService } from '../services/communityService';
 import { Navbar } from '../components/Navbar';
 import { AlertError } from '../components/AlertError';
 import { CheckinFeed } from '../components/CheckinFeed';
+import { RankingView } from '../components/RankingView';
 import { useAuth } from '../hooks/useAuth';
 
 export const CommunityDetailPage: React.FC = () => {
@@ -29,7 +31,7 @@ export const CommunityDetailPage: React.FC = () => {
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [joinRequests, setJoinRequests] = useState<CommunityJoinRequest[]>([]);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
-  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'requests'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'ranking' | 'members' | 'requests'>('feed');
 
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -300,6 +302,23 @@ export const CommunityDetailPage: React.FC = () => {
               </button>
 
               <button
+                onClick={() => setActiveTab('ranking')}
+                className="btn"
+                style={{
+                  width: 'auto',
+                  backgroundColor: activeTab === 'ranking' ? 'var(--primary)' : 'transparent',
+                  color: activeTab === 'ranking' ? '#fff' : 'var(--text-muted)',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                }}
+              >
+                <Trophy size={16} style={{ marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                Ranking
+              </button>
+
+              <button
                 onClick={() => setActiveTab('members')}
                 className="btn"
                 style={{
@@ -343,6 +362,14 @@ export const CommunityDetailPage: React.FC = () => {
                 currentUserRole={community.currentUserRole}
                 currentUserId={user?.id}
                 members={members}
+              />
+            )}
+
+            {activeTab === 'ranking' && (
+              <RankingView
+                communityId={community.id}
+                isMember={isMember}
+                currentUserId={user?.id}
               />
             )}
 

@@ -4,9 +4,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CommunityDetailPage } from '../pages/CommunityDetailPage';
 import { communityService } from '../services/communityService';
 import { checkinService } from '../services/checkinService';
+import { rankingService } from '../services/rankingService';
 import { AuthContext, AuthContextType } from '../context/AuthContext';
 import { Community, CommunityJoinRequest, CommunityMember } from '../types/community';
 import { Checkin } from '../types/checkin';
+import { RankingEntry } from '../types/ranking';
 
 vi.mock('../services/communityService', () => ({
   communityService: {
@@ -29,6 +31,13 @@ vi.mock('../services/checkinService', () => ({
     createCheckin: vi.fn(),
     deleteCheckin: vi.fn(),
     getCheckinDetails: vi.fn(),
+  },
+}));
+
+vi.mock('../services/rankingService', () => ({
+  rankingService: {
+    getCommunityRanking: vi.fn(),
+    getMyRankingPosition: vi.fn(),
   },
 }));
 
@@ -109,6 +118,29 @@ const mockCheckins: Checkin[] = [
   },
 ];
 
+const mockRankings: RankingEntry[] = [
+  {
+    rankingPeriodId: 'period-1',
+    userId: 'owner-id',
+    username: 'owner_user',
+    name: 'Owner User',
+    points: 20,
+    position: 1,
+    streakAtUpdate: 2,
+    updatedAt: '2026-11-03T10:00:00Z',
+  },
+  {
+    rankingPeriodId: 'period-1',
+    userId: 'member-2',
+    username: 'colleague_bob',
+    name: 'Bob Colleague',
+    points: 10,
+    position: 2,
+    streakAtUpdate: 1,
+    updatedAt: '2026-11-03T10:00:00Z',
+  },
+];
+
 const renderDetail = () => {
   return render(
     <MemoryRouter initialEntries={['/communities/comm-10']}>
@@ -131,6 +163,22 @@ describe('CommunityDetailPage', () => {
       totalElements: 1,
       totalPages: 1,
       hasNext: false,
+    });
+    vi.mocked(rankingService.getCommunityRanking).mockResolvedValue({
+      content: mockRankings,
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      totalPages: 1,
+      hasNext: false,
+    });
+    vi.mocked(rankingService.getMyRankingPosition).mockResolvedValue({
+      communityId: 'comm-10',
+      rankingPeriodId: 'period-1',
+      userId: 'owner-id',
+      points: 20,
+      position: 1,
+      streakAtUpdate: 2,
     });
   });
 
@@ -205,7 +253,7 @@ describe('CommunityDetailPage', () => {
     });
   });
 
-  it('allows member to publish a new check-in', async () => {
+  it('switches to ranking tab and displays community leaderboard', async () => {
     vi.mocked(communityService.getCommunityDetails).mockResolvedValue(mockCommunity);
     vi.mocked(communityService.listMembers).mockResolvedValue({
       content: mockMembers,
@@ -223,35 +271,19 @@ describe('CommunityDetailPage', () => {
       totalPages: 1,
       hasNext: false,
     });
-    vi.mocked(checkinService.createCheckin).mockResolvedValue({
-      id: 'checkin-2',
-      userId: 'owner-id',
-      communityId: 'comm-10',
-      caption: 'Estudo de TCP/IP',
-      createdAt: '2026-10-31T14:00:00Z',
-      updatedAt: '2026-10-31T14:00:00Z',
-    });
 
     renderDetail();
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/O que você estudou hoje\?/)).toBeInTheDocument();
+      expect(screen.getByText('Ranking')).toBeInTheDocument();
     });
 
-    const textarea = screen.getByPlaceholderText(/O que você estudou hoje\?/);
-    fireEvent.change(textarea, { target: { value: 'Estudo de TCP/IP' } });
-
-    const submitBtn = screen.getByText('Publicar Check-in');
-    fireEvent.click(submitBtn);
+    fireEvent.click(screen.getByText('Ranking'));
 
     await waitFor(() => {
-      expect(checkinService.createCheckin).toHaveBeenCalledWith(
-        expect.objectContaining({
-          communityId: 'comm-10',
-          caption: 'Estudo de TCP/IP',
-        }),
-        expect.any(String)
-      );
+      expect(screen.getByText('Sua Colocação Atual')).toBeInTheDocument();
+      expect(screen.getByText(/Você está no 1º lugar/)).toBeInTheDocument();
+      expect(screen.getByText('Tabela Geral de Classificação')).toBeInTheDocument();
     });
   });
 });

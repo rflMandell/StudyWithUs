@@ -6,6 +6,7 @@ import com.studywithus.identity.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,6 +41,13 @@ public class UserRepositoryAdapter implements UserRepository {
     @Override
     public Optional<User> findByUsernameOrEmail(String usernameOrEmail) {
         return springDataUserRepository.findByUsernameOrEmail(usernameOrEmail).map(UserJpaEntity::toDomain);
+    }
+
+    @Override
+    public List<User> findAllById(Iterable<UUID> ids) {
+        return springDataUserRepository.findAllById(ids).stream()
+                .map(UserJpaEntity::toDomain)
+                .toList();
     }
 
     @Override
