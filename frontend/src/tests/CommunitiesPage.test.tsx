@@ -31,6 +31,7 @@ const mockAuthContext: AuthContextType = {
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
+  updateUser: vi.fn(),
   clearError: vi.fn(),
 };
 

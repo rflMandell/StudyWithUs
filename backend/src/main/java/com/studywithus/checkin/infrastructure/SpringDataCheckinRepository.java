@@ -23,6 +23,9 @@ public interface SpringDataCheckinRepository extends JpaRepository<CheckinJpaEnt
     @Query("SELECT c FROM CheckinJpaEntity c WHERE c.userId = :userId AND c.deletedAt IS NULL ORDER BY c.createdAt DESC")
     Page<CheckinJpaEntity> findActiveByUserId(@Param("userId") UUID userId, Pageable pageable);
 
+    @Query("SELECT COUNT(c) FROM CheckinJpaEntity c WHERE c.userId = :userId AND c.deletedAt IS NULL")
+    long countActiveByUserId(@Param("userId") UUID userId);
+
     @Query("SELECT c FROM CheckinJpaEntity c WHERE c.deletedAt IS NULL AND c.communityId IN :communityIds ORDER BY c.createdAt DESC, c.id DESC")
     List<CheckinJpaEntity> findFeedByCommunities(
             @Param("communityIds") Collection<UUID> communityIds,

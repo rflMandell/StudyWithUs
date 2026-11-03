@@ -1,3 +1,11 @@
+export interface UserBadge {
+  badgeId: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  awardedAt: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -11,7 +19,23 @@ export interface User {
   bio?: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
   lifetimePoints: number;
+  currentPoints?: number;
+  activeCommunitiesCount?: number;
+  checkinsCount?: number;
+  currentStreak?: number;
+  longestStreak?: number;
+  badges?: UserBadge[];
   createdAt: string;
+}
+
+export interface UpdateUserData {
+  name?: string;
+  bio?: string;
+  institution?: string;
+  course?: string;
+  studyGoal?: string;
+  avatarUrl?: string;
+  birthDate?: string;
 }
 
 export interface LoginCredentials {

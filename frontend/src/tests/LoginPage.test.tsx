@@ -15,6 +15,7 @@ const defaultContext: AuthContextType = {
   login: mockLogin,
   register: vi.fn(),
   logout: vi.fn(),
+  updateUser: vi.fn(),
   clearError: mockClearError,
 };
 

@@ -42,6 +42,20 @@ export const Navbar: React.FC = () => {
                 <Users size={16} />
                 <span>Comunidades</span>
               </Link>
+              <Link
+                to="/profile"
+                style={{
+                  fontWeight: 500,
+                  fontSize: '0.925rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  color: location.pathname.startsWith('/profile') ? 'var(--primary)' : 'var(--text-muted)',
+                }}
+              >
+                <UserIcon size={16} />
+                <span>Perfil</span>
+              </Link>
             </nav>
           )}
         </div>

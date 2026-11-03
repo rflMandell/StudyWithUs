@@ -76,6 +76,11 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
     }
 
     @Override
+    public long countActiveByUserId(UUID userId) {
+        return repository.countActiveByUserId(userId);
+    }
+
+    @Override
     public List<Checkin> findFeedCheckins(
             Collection<UUID> communityIds,
             Collection<UUID> followingIds,
