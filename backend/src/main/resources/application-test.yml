@@ -38,3 +38,7 @@ management:
   health:
     redis:
       enabled: false
+
+app:
+  rate-limiting:
+    enabled: false
