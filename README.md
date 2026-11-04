@@ -1,10 +1,10 @@
-# StudyWithUs 🎓⚡
+# StudyWithUs
 
 > Plataforma universitária colaborativa de estudos, comunidades e gamificação com feeds em tempo real, rankings de estudo e acompanhamento de sequências (streaks).
 
 ---
 
-## 🛠️ Stack Tecnológica
+## Stack Tecnológica
 
 ### Backend
 - **Linguagem & Framework**: Java 21 LTS, Spring Boot 3.3.4
@@ -28,7 +28,7 @@
 
 ---
 
-## 🚀 Como Executar
+## Como Executar
 
 ### 1. Com Docker Compose (Recomendado para Produção/Staging)
 
@@ -76,7 +76,7 @@ npm run dev
 
 ---
 
-## 🧪 Testes Automatizados
+## Testes Automatizados
 
 ### Backend (103 testes)
 Inclui testes unitários, testes de arquitetura com ArchUnit e testes de integração com banco de dados em memória:
@@ -95,7 +95,7 @@ npm run build
 
 ---
 
-## 🔍 Smoke Test & Validação Ponta a Ponta
+## Smoke Test & Validação Ponta a Ponta
 
 Para validar um ambiente recém-implantado de ponta a ponta:
 
@@ -114,7 +114,7 @@ O script executa automaticamente:
 
 ---
 
-## 💾 Rotinas de Backup & Restauração
+## Rotinas de Backup & Restauração
 
 ### Criar backup do banco de dados:
 ```bash
@@ -129,7 +129,7 @@ O script executa automaticamente:
 
 ---
 
-## 🛡️ Segurança & Rate Limiting
+## Segurança & Rate Limiting
 
 - **Proteção contra Brute Force**: Rate limiting de 20 requisições/minuto no endpoint de login e 15 requisições/minuto no registro por endereço IP, retornando HTTP `429 Too Many Requests` com header `Retry-After: 60`.
 - **Rastreabilidade**: Todas as requisições geram ou propagam um `X-Trace-Id` que acompanha os logs estruturados no MDC (`traceId`).
