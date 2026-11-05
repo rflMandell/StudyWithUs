@@ -1,11 +1,11 @@
 # Java / Maven
 backend/target/
-backend/.mvn/
 target/
-.mvn/
 *.class
 *.jar
 *.war
+!backend/.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
 
 # Node
 frontend/node_modules/
