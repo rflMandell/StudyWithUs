@@ -59,7 +59,7 @@ organizada de produto e engenharia.
     -   desafio
     -   feed
     -   Premium
-8.  **08 --- Roadmap, Sprints e Critérios de Aceitação**
+8.  **08 --- Roadmap, Sprints e Critérios de Aceitação (V1 - MVP)**
     -   evolução do MVP
     -   sprints
     -   Definition of Done
@@ -78,6 +78,11 @@ organizada de produto e engenharia.
     -   motivos
     -   alternativas
     -   consequências
+11. **11 --- Roadmap, Sprints e Critérios de Aceitação (Fase 2)**
+    -   evolução pós-MVP
+    -   sprints da Fase 2 (Comentários, Badges, Desafios, Notificações, Moderação, Premium)
+    -   estratégia e testes por sprint
+    -   Definition of Done
 
 ## Hierarquia de autoridade
 

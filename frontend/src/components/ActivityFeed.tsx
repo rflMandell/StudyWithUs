@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Newspaper, Users, Clock, Award, Image, RefreshCw, ChevronDown } from 'lucide-react';
 import { FeedItem } from '../types/feed';
 import { feedService } from '../services/feedService';
+import { CommentSection } from './CommentSection';
 
 export const ActivityFeed: React.FC = () => {
   const [items, setItems] = useState<FeedItem[]>([]);
@@ -264,6 +265,12 @@ export const ActivityFeed: React.FC = () => {
                   <span>{item.mediaKeys.length} anexo(s) incluído(s)</span>
                 </div>
               )}
+
+              <CommentSection
+                checkinId={item.id}
+                initialCommentsCount={item.commentsCount || 0}
+                isMember={true}
+              />
             </div>
           ))}
 

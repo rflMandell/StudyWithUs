@@ -4,6 +4,7 @@ export interface Checkin {
   communityId: string;
   caption?: string;
   mediaKeys?: string[];
+  commentsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,7 @@
 package com.studywithus.community.application;
 
 import com.studywithus.community.domain.Community;
+import com.studywithus.community.domain.CommunityCreatedEvent;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
@@ -9,6 +10,7 @@ import com.studywithus.community.domain.MemberStatus;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class CreateCommunityUseCase implements UseCase<CreateCommunityCommand, C
 
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -55,6 +58,8 @@ public class CreateCommunityUseCase implements UseCase<CreateCommunityCommand, C
                 .build();
 
         communityMemberRepository.save(ownerMember);
+
+        eventPublisher.publishEvent(CommunityCreatedEvent.of(savedCommunity));
 
         return CommunityResult.from(savedCommunity, 1, CommunityRole.OWNER);
     }

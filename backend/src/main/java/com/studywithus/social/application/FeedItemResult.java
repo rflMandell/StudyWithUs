@@ -14,6 +14,7 @@ public record FeedItemResult(
         String communityName,
         String caption,
         List<String> mediaKeys,
+        long commentsCount,
         Instant createdAt
 ) {
 }

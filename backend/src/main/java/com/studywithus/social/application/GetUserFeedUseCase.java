@@ -8,6 +8,7 @@ import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
+import com.studywithus.social.domain.CommentRepository;
 import com.studywithus.social.domain.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class GetUserFeedUseCase {
     private final CheckinRepository checkinRepository;
     private final UserRepository userRepository;
     private final CommunityRepository communityRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional(readOnly = true)
     public FeedCursorResult execute(GetUserFeedQuery query) {
@@ -69,11 +71,17 @@ public class GetUserFeedUseCase {
                 .map(Checkin::getCommunityId)
                 .collect(Collectors.toSet());
 
+        List<UUID> checkinIds = itemsToReturn.stream()
+                .map(Checkin::getId)
+                .toList();
+
         Map<UUID, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
         Map<UUID, Community> communityMap = communityRepository.findAllById(communityIds).stream()
                 .collect(Collectors.toMap(Community::getId, Function.identity()));
+
+        Map<UUID, Long> commentCountsMap = commentRepository.countActiveByCheckinIds(checkinIds);
 
         List<FeedItemResult> results = new ArrayList<>();
         for (Checkin c : itemsToReturn) {
@@ -83,6 +91,8 @@ public class GetUserFeedUseCase {
             List<String> mediaKeys = c.getMedia() != null
                     ? c.getMedia().stream().map(CheckinMedia::getStorageKey).toList()
                     : Collections.emptyList();
+
+            long commentsCount = commentCountsMap.getOrDefault(c.getId(), 0L);
 
             results.add(new FeedItemResult(
                     c.getId(),
@@ -94,6 +104,7 @@ public class GetUserFeedUseCase {
                     community != null ? community.getName() : "Comunidade",
                     c.getCaption(),
                     mediaKeys,
+                    commentsCount,
                     c.getCreatedAt()
             ));
         }

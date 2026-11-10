@@ -4,6 +4,7 @@ import { Checkin } from '../types/checkin';
 import { CommunityRole, CommunityMember } from '../types/community';
 import { checkinService } from '../services/checkinService';
 import { AlertError } from './AlertError';
+import { CommentSection } from './CommentSection';
 
 interface CheckinFeedProps {
   communityId: string;
@@ -247,6 +248,13 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                     ))}
                   </div>
                 )}
+
+                <CommentSection
+                  checkinId={checkin.id}
+                  initialCommentsCount={checkin.commentsCount || 0}
+                  isMember={isMember}
+                  currentUserId={currentUserId}
+                />
               </div>
             );
           })}

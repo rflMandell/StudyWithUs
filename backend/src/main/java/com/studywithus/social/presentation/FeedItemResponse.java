@@ -16,6 +16,7 @@ public record FeedItemResponse(
         String communityName,
         String caption,
         List<String> mediaKeys,
+        long commentsCount,
         Instant createdAt
 ) {
     public static FeedItemResponse from(FeedItemResult result) {
@@ -29,6 +30,7 @@ public record FeedItemResponse(
                 result.communityName(),
                 result.caption(),
                 result.mediaKeys(),
+                result.commentsCount(),
                 result.createdAt()
         );
     }

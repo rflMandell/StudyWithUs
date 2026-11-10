@@ -12,6 +12,7 @@ public record CheckinResponse(
         UUID communityId,
         String caption,
         List<String> mediaKeys,
+        long commentsCount,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -22,6 +23,7 @@ public record CheckinResponse(
                 result.communityId(),
                 result.caption(),
                 result.mediaKeys(),
+                result.commentsCount(),
                 result.createdAt(),
                 result.updatedAt()
         );

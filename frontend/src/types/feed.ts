@@ -8,6 +8,7 @@ export interface FeedItem {
   communityName?: string;
   caption: string;
   mediaKeys: string[];
+  commentsCount?: number;
   createdAt: string;
 }
 

@@ -33,6 +33,9 @@ class CreateCommunityUseCaseTest {
     @Mock
     private CommunityMemberRepository communityMemberRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private CreateCommunityUseCase createCommunityUseCase;
 

@@ -1,4 +1,4 @@
-# StudyWithUs --- Roadmap, Sprints e Critérios de Aceitação
+# StudyWithUs --- Roadmap, Sprints e Critérios de Aceitação (V1 - MVP)
 
 ## 1. Estratégia
 
@@ -291,6 +291,8 @@ fluxo completo
 ## 15. Pós-MVP
 
 ### Fase 2
+
+O detalhamento completo das sprints, estratégia, entregas e critérios de teste da Fase 2 encontra-se no documento [11_ROADMAP_SPRINTS_FASE_2.md](file:///Users/rafaelmandel/Documents/GitHub/studywithus/docs/11_ROADMAP_SPRINTS_FASE_2.md):
 
 -   comentários;
 -   desafios avançados;

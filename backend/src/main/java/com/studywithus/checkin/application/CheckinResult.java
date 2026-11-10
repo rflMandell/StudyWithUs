@@ -14,10 +14,15 @@ public record CheckinResult(
         UUID communityId,
         String caption,
         List<String> mediaKeys,
+        long commentsCount,
         Instant createdAt,
         Instant updatedAt
 ) {
     public static CheckinResult fromDomain(Checkin checkin) {
+        return fromDomain(checkin, 0L);
+    }
+
+    public static CheckinResult fromDomain(Checkin checkin, long commentsCount) {
         List<String> keys = checkin.getMedia() != null
                 ? checkin.getMedia().stream().map(CheckinMedia::getStorageKey).toList()
                 : Collections.emptyList();
@@ -28,6 +33,7 @@ public record CheckinResult(
                 checkin.getCommunityId(),
                 checkin.getCaption(),
                 keys,
+                commentsCount,
                 checkin.getCreatedAt(),
                 checkin.getUpdatedAt()
         );

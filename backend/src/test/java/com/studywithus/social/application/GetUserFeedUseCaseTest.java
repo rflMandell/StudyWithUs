@@ -9,6 +9,7 @@ import com.studywithus.community.domain.CommunityVisibility;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.identity.domain.UserStatus;
+import com.studywithus.social.domain.CommentRepository;
 import com.studywithus.social.domain.FollowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class GetUserFeedUseCaseTest {
     @Mock
     private CommunityRepository communityRepository;
 
+    @Mock
+    private CommentRepository commentRepository;
+
     private GetUserFeedUseCase useCase;
 
     @BeforeEach
@@ -53,7 +57,8 @@ class GetUserFeedUseCaseTest {
                 followRepository,
                 checkinRepository,
                 userRepository,
-                communityRepository
+                communityRepository,
+                commentRepository
         );
     }
 

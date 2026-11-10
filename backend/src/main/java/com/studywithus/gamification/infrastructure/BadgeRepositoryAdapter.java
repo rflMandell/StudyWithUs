@@ -30,6 +30,18 @@ public class BadgeRepositoryAdapter implements BadgeRepository {
     }
 
     @Override
+    public Optional<Badge> findByName(String name) {
+        return badgeRepository.findByName(name).map(BadgeJpaEntity::toDomain);
+    }
+
+    @Override
+    public List<Badge> findAllBadges() {
+        return badgeRepository.findAll().stream()
+                .map(BadgeJpaEntity::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<UserBadge> findUserBadges(UUID userId) {
         return userBadgeRepository.findByUserIdWithBadge(userId).stream()
                 .map(ub -> UserBadge.builder()
@@ -46,9 +58,16 @@ public class BadgeRepositoryAdapter implements BadgeRepository {
     }
 
     @Override
+    public boolean hasBadge(UUID userId, UUID badgeId) {
+        return userBadgeRepository.existsById(new UserBadgeId(userId, badgeId));
+    }
+
+    @Override
     public void assignBadgeToUser(UUID userId, UUID badgeId, Instant awardedAt, UUID challengeId, UUID communityId) {
+        BadgeJpaEntity badgeRef = badgeRepository.findById(badgeId).orElse(null);
         UserBadgeJpaEntity entity = UserBadgeJpaEntity.builder()
                 .id(new UserBadgeId(userId, badgeId))
+                .badge(badgeRef)
                 .awardedAt(awardedAt != null ? awardedAt : Instant.now())
                 .challengeId(challengeId)
                 .communityId(communityId)
