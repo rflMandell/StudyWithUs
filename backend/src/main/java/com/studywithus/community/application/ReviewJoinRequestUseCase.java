@@ -3,6 +3,7 @@ package com.studywithus.community.application;
 import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityJoinRequest;
 import com.studywithus.community.domain.CommunityJoinRequestRepository;
+import com.studywithus.community.domain.CommunityJoinRequestReviewedEvent;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
@@ -11,6 +12,7 @@ import com.studywithus.community.domain.MemberStatus;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class ReviewJoinRequestUseCase implements UseCase<ReviewJoinRequestComman
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
     private final CommunityJoinRequestRepository joinRequestRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -79,6 +82,15 @@ public class ReviewJoinRequestUseCase implements UseCase<ReviewJoinRequestComman
         }
 
         CommunityJoinRequest saved = joinRequestRepository.save(request);
+
+        eventPublisher.publishEvent(new CommunityJoinRequestReviewedEvent(
+                saved.getId(),
+                saved.getCommunityId(),
+                saved.getUserId(),
+                command.reviewerUserId(),
+                saved.getStatus()
+        ));
+
         return CommunityJoinRequestResult.fromDomain(saved);
     }
 }

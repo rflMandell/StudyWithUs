@@ -41,6 +41,9 @@ class ReviewJoinRequestUseCaseTest {
     @Mock
     private CommunityJoinRequestRepository joinRequestRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private ReviewJoinRequestUseCase reviewJoinRequestUseCase;
 
