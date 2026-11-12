@@ -34,6 +34,9 @@ class CreateCommunityUseCaseTest {
     private CommunityMemberRepository communityMemberRepository;
 
     @Mock
+    private com.studywithus.subscription.application.PlanLimitService planLimitService;
+
+    @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks

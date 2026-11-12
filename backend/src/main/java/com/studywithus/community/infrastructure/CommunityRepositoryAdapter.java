@@ -60,4 +60,9 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
                 .map(CommunityJpaEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    public long countByOwnerId(UUID ownerId) {
+        return springDataCommunityRepository.countByOwnerIdAndDeletedAtIsNull(ownerId);
+    }
 }

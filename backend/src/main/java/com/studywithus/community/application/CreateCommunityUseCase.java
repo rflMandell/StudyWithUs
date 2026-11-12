@@ -9,6 +9,7 @@ import com.studywithus.community.domain.CommunityRole;
 import com.studywithus.community.domain.MemberStatus;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
+import com.studywithus.subscription.application.PlanLimitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -23,11 +24,14 @@ public class CreateCommunityUseCase implements UseCase<CreateCommunityCommand, C
 
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final PlanLimitService planLimitService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public CommunityResult execute(CreateCommunityCommand command) {
+        planLimitService.assertCanCreateCommunity(command.ownerId());
+
         String cleanName = command.name().trim();
 
         if (communityRepository.existsByNameIgnoreCase(cleanName)) {

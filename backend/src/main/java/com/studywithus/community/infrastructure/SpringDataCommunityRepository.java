@@ -13,6 +13,8 @@ public interface SpringDataCommunityRepository extends JpaRepository<CommunityJp
 
     boolean existsByNameIgnoreCaseAndDeletedAtIsNull(String name);
 
+    long countByOwnerIdAndDeletedAtIsNull(UUID ownerId);
+
     @Query("""
         SELECT c FROM CommunityJpaEntity c
         WHERE c.visibility = :visibility
