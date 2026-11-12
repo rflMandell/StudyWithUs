@@ -105,16 +105,21 @@ GET /communities/{communityId}/ranking/me
 GET /users/me/points
 GET /users/me/points/history
 GET /users/me/streak
+GET /badges
+GET /badges/{badgeId}
 GET /users/{userId}/badges
 ```
 
 ### Challenges
 
 ``` text
+GET /challenges
+GET /challenges/{challengeId}
 GET /communities/{communityId}/challenges
 POST /communities/{communityId}/challenges
 POST /challenges/{challengeId}/participants
 GET /challenges/{challengeId}/progress/me
+GET /challenges/{challengeId}/leaderboard
 ```
 
 ### Notifications
@@ -123,27 +128,40 @@ GET /challenges/{challengeId}/progress/me
 GET /notifications
 PATCH /notifications/{notificationId}/read
 POST /notifications/read-all
+GET /notifications/unread-count
 POST /devices
 DELETE /devices/{deviceId}
-GET /users/me/notification-preferences
-PATCH /users/me/notification-preferences
+GET /notifications/preferences
+PUT /notifications/preferences
 ```
 
 ### Moderation
 
 ``` text
 POST /reports
-GET /admin/reports
-POST /admin/reports/{reportId}/resolve
+GET /reports
+GET /reports/{reportId}
+POST /reports/{reportId}/resolve
+POST /reports/{reportId}/dismiss
+GET /audit-logs
 ```
 
-### Subscription
+### Subscription & Monetization
 
 ``` text
 GET /subscription
 POST /subscription
 POST /subscription/cancel
 POST /webhooks/subscription
+```
+
+### Observability & Health
+
+``` text
+GET /actuator/health
+GET /actuator/info
+GET /actuator/metrics
+GET /actuator/metrics/{metricName}
 ```
 
 ## 4. Status codes

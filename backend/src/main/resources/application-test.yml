@@ -32,9 +32,15 @@ security:
     refresh-token-expiration: 86400000 # 1 day for test
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
   health:
     redis:
       enabled: false
