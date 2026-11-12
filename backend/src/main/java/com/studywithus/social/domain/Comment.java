@@ -57,6 +57,10 @@ public class Comment {
         if (!isAuthor(requestingUserId)) {
             throw new DomainException(HttpStatus.FORBIDDEN, "COMMENT_FORBIDDEN", "Apenas o autor pode excluir o comentário");
         }
+        removeByModerator();
+    }
+
+    public void removeByModerator() {
         Instant now = Instant.now();
         this.deletedAt = now;
         this.updatedAt = now;
