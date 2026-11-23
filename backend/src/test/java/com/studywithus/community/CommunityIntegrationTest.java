@@ -125,7 +125,15 @@ class CommunityIntegrationTest {
     @Order(3)
     @DisplayName("B visualiza: User B lists and views details of 'Clube de Algoritmos'")
     void step3_userBViewsCommunity() throws Exception {
-        // List communities
+        // List communities without search
+        mockMvc.perform(get("/api/v1/communities")
+                        .header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(communityId.toString()))
+                .andExpect(jsonPath("$.content[0].name").value("Clube de Algoritmos"))
+                .andExpect(jsonPath("$.content[0].currentUserRole").doesNotExist());
+
+        // List communities with search
         mockMvc.perform(get("/api/v1/communities")
                         .header("Authorization", "Bearer " + tokenB)
                         .param("search", "Algoritmos"))

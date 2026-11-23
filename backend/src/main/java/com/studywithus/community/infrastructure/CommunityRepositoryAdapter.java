@@ -37,11 +37,12 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
     @Override
     public PagedResult<Community> findPublicCommunities(String search, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size);
-        Page<CommunityJpaEntity> entities = springDataCommunityRepository.findByVisibilityAndSearch(
-                CommunityVisibility.PUBLIC,
-                search != null && !search.isBlank() ? search.trim() : null,
-                pageRequest
-        );
+        String trimmedSearch = search != null && !search.isBlank() ? search.trim() : null;
+        Page<CommunityJpaEntity> entities = trimmedSearch == null
+                ? springDataCommunityRepository.findByVisibilityAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        CommunityVisibility.PUBLIC, pageRequest)
+                : springDataCommunityRepository.findByVisibilityAndSearch(
+                        CommunityVisibility.PUBLIC, trimmedSearch, pageRequest);
 
         return new PagedResult<>(
                 entities.map(CommunityJpaEntity::toDomain).getContent(),

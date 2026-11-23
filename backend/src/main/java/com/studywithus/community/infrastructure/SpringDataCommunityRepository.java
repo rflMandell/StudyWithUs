@@ -15,11 +15,16 @@ public interface SpringDataCommunityRepository extends JpaRepository<CommunityJp
 
     long countByOwnerIdAndDeletedAtIsNull(UUID ownerId);
 
+    Page<CommunityJpaEntity> findByVisibilityAndDeletedAtIsNullOrderByCreatedAtDesc(
+            CommunityVisibility visibility,
+            Pageable pageable
+    );
+
     @Query("""
         SELECT c FROM CommunityJpaEntity c
         WHERE c.visibility = :visibility
           AND c.deletedAt IS NULL
-          AND (:search IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))
+          AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))
                OR LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')))
         ORDER BY c.createdAt DESC
     """)
