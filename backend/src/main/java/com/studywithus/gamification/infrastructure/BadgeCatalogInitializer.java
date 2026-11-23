@@ -53,6 +53,30 @@ public class BadgeCatalogInitializer {
                 BadgeConstants.BADGE_POINTS_100_DESC,
                 BadgeConstants.BADGE_POINTS_100_IMG
         );
+        seedBadge(
+                BadgeConstants.BADGE_LEAGUE_CHAMPION_ID,
+                BadgeConstants.BADGE_LEAGUE_CHAMPION_NAME,
+                BadgeConstants.BADGE_LEAGUE_CHAMPION_DESC,
+                BadgeConstants.BADGE_LEAGUE_CHAMPION_IMG
+        );
+        seedBadge(
+                BadgeConstants.BADGE_LEAGUE_GOLD_ID,
+                BadgeConstants.BADGE_LEAGUE_GOLD_NAME,
+                BadgeConstants.BADGE_LEAGUE_GOLD_DESC,
+                BadgeConstants.BADGE_LEAGUE_GOLD_IMG
+        );
+        seedBadge(
+                BadgeConstants.BADGE_LEAGUE_DIAMOND_ID,
+                BadgeConstants.BADGE_LEAGUE_DIAMOND_NAME,
+                BadgeConstants.BADGE_LEAGUE_DIAMOND_DESC,
+                BadgeConstants.BADGE_LEAGUE_DIAMOND_IMG
+        );
+        seedBadge(
+                BadgeConstants.BADGE_LEAGUE_MASTER_ID,
+                BadgeConstants.BADGE_LEAGUE_MASTER_NAME,
+                BadgeConstants.BADGE_LEAGUE_MASTER_DESC,
+                BadgeConstants.BADGE_LEAGUE_MASTER_IMG
+        );
     }
 
     private void seedBadge(UUID id, String name, String description, String imageUrl) {

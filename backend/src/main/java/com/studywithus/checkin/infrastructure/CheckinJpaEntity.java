@@ -43,6 +43,15 @@ public class CheckinJpaEntity {
     @Column(length = 1000)
     private String caption;
 
+    @Column(length = 100)
+    private String subject;
+
+    @Column(name = "duration_minutes", nullable = false)
+    private int durationMinutes;
+
+    @Column(name = "tags_csv", length = 500)
+    private String tagsCsv;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -64,6 +73,11 @@ public class CheckinJpaEntity {
                 .userId(domain.getUserId())
                 .communityId(domain.getCommunityId())
                 .caption(domain.getCaption())
+                .subject(domain.getSubject())
+                .durationMinutes(domain.getDurationMinutes())
+                .tagsCsv(domain.getTags() != null && !domain.getTags().isEmpty()
+                        ? String.join(",", domain.getTags())
+                        : null)
                 .createdAt(domain.getCreatedAt())
                 .updatedAt(domain.getUpdatedAt())
                 .deletedAt(domain.getDeletedAt())
@@ -100,11 +114,18 @@ public class CheckinJpaEntity {
             }
         }
 
+        List<String> tagList = (this.tagsCsv != null && !this.tagsCsv.isBlank())
+                ? java.util.Arrays.asList(this.tagsCsv.split(","))
+                : new ArrayList<>();
+
         return Checkin.builder()
                 .id(this.id)
                 .userId(this.userId)
                 .communityId(this.communityId)
                 .caption(this.caption)
+                .subject(this.subject)
+                .tags(tagList)
+                .durationMinutes(this.durationMinutes)
                 .media(mediaDomain)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)

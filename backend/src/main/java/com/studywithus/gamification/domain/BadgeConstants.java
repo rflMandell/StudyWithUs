@@ -29,6 +29,26 @@ public final class BadgeConstants {
     public static final String BADGE_POINTS_100_DESC = "Acumulou 100 pontos de dedicação nos estudos.";
     public static final String BADGE_POINTS_100_IMG = "/badges/points_100.png";
 
+    public static final UUID BADGE_LEAGUE_CHAMPION_ID = UUID.fromString("b1000000-0000-0000-0000-000000000006");
+    public static final String BADGE_LEAGUE_CHAMPION_NAME = "Campeão da Semana";
+    public static final String BADGE_LEAGUE_CHAMPION_DESC = "Conquistou o 1º lugar no seu grupo semanal da liga.";
+    public static final String BADGE_LEAGUE_CHAMPION_IMG = "/badges/league_champion.png";
+
+    public static final UUID BADGE_LEAGUE_GOLD_ID = UUID.fromString("b1000000-0000-0000-0000-000000000007");
+    public static final String BADGE_LEAGUE_GOLD_NAME = "Liga Ouro";
+    public static final String BADGE_LEAGUE_GOLD_DESC = "Alcançou a divisão Ouro nas ligas competitivas.";
+    public static final String BADGE_LEAGUE_GOLD_IMG = "/badges/league_gold.png";
+
+    public static final UUID BADGE_LEAGUE_DIAMOND_ID = UUID.fromString("b1000000-0000-0000-0000-000000000008");
+    public static final String BADGE_LEAGUE_DIAMOND_NAME = "Liga Diamante";
+    public static final String BADGE_LEAGUE_DIAMOND_DESC = "Alcançou a divisão Diamante nas ligas competitivas.";
+    public static final String BADGE_LEAGUE_DIAMOND_IMG = "/badges/league_diamond.png";
+
+    public static final UUID BADGE_LEAGUE_MASTER_ID = UUID.fromString("b1000000-0000-0000-0000-000000000009");
+    public static final String BADGE_LEAGUE_MASTER_NAME = "Mestre da Liga";
+    public static final String BADGE_LEAGUE_MASTER_DESC = "Alcançou ou manteve-se na divisão máxima Mestre.";
+    public static final String BADGE_LEAGUE_MASTER_IMG = "/badges/league_master.png";
+
     private BadgeConstants() {
     }
 }

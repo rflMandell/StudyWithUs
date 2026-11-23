@@ -3,6 +3,7 @@ package com.studywithus.checkin.application;
 import com.studywithus.checkin.domain.Checkin;
 import com.studywithus.checkin.domain.CheckinCreatedEvent;
 import com.studywithus.checkin.domain.CheckinRepository;
+import com.studywithus.checkin.domain.StudyActivityRecordedEvent;
 import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
@@ -87,7 +88,10 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
                 command.userId(),
                 command.communityId(),
                 command.caption(),
-                command.mediaKeys()
+                command.mediaKeys(),
+                command.subject(),
+                command.tags(),
+                command.durationMinutes()
         );
 
         Checkin saved = checkinRepository.save(checkin);
@@ -100,6 +104,15 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
                 saved.getId(),
                 saved.getUserId(),
                 saved.getCommunityId(),
+                saved.getCreatedAt()
+        ));
+        eventPublisher.publishEvent(new StudyActivityRecordedEvent(
+                saved.getId(),
+                saved.getUserId(),
+                saved.getCommunityId(),
+                saved.getSubject(),
+                saved.getTags(),
+                saved.getDurationMinutes(),
                 saved.getCreatedAt()
         ));
 

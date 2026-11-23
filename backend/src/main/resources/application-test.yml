@@ -48,6 +48,8 @@ management:
 app:
   feed:
     redis-enabled: false
+  league:
+    redis-enabled: false
   rate-limiting:
     enabled: false
   media:

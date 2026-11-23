@@ -71,6 +71,9 @@ app:
     redis-enabled: ${FEED_REDIS_ENABLED:true}
     max-timeline-size: ${FEED_MAX_TIMELINE_SIZE:1000}
     timeline-ttl-days: ${FEED_TIMELINE_TTL_DAYS:7}
+  league:
+    redis-enabled: ${LEAGUE_REDIS_ENABLED:true}
+    season-close-cron: ${LEAGUE_SEASON_CLOSE_CRON:0 0 0 * * MON}
   media:
     storage-type: ${MEDIA_STORAGE_TYPE:local}
     local-dir: ${MEDIA_LOCAL_DIR:${java.io.tmpdir}/studywithus-media}

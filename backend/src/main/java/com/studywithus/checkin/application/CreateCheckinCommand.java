@@ -8,6 +8,18 @@ public record CreateCheckinCommand(
         UUID communityId,
         String caption,
         List<String> mediaKeys,
-        String idempotencyKey
+        String idempotencyKey,
+        String subject,
+        List<String> tags,
+        Integer durationMinutes
 ) {
+    public CreateCheckinCommand(
+            UUID userId,
+            UUID communityId,
+            String caption,
+            List<String> mediaKeys,
+            String idempotencyKey
+    ) {
+        this(userId, communityId, caption, mediaKeys, idempotencyKey, null, null, null);
+    }
 }

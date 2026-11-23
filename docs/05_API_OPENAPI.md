@@ -101,6 +101,15 @@ GET /communities/{communityId}/ranking
 GET /communities/{communityId}/ranking/me
 ```
 
+### Leagues
+
+``` text
+GET /leagues/me
+GET /leagues/pools/{poolId}
+GET /leagues/me/history
+GET /leagues/divisions
+```
+
 ### Gamification
 
 ``` text
