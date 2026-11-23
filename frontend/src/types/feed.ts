@@ -11,6 +11,7 @@ export interface FeedItem {
   communityName?: string;
   caption: string;
   mediaKeys: string[];
+  mediaUrls?: string[];
   commentsCount?: number;
   createdAt: string;
 }

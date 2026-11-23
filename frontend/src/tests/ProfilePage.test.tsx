@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProfilePage } from '../pages/ProfilePage';
 import { userService } from '../services/userService';
+import { mediaService } from '../services/mediaService';
 import { AuthContext, AuthContextType } from '../context/AuthContext';
 import { User } from '../types/auth';
 
@@ -10,8 +11,16 @@ vi.mock('../services/userService', () => ({
   userService: {
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
+    uploadAvatar: vi.fn(),
     getUserStreak: vi.fn(),
     getUserBadges: vi.fn(),
+  },
+}));
+
+vi.mock('../services/mediaService', () => ({
+  mediaService: {
+    validateImageFile: vi.fn(),
+    uploadImage: vi.fn(),
   },
 }));
 
@@ -125,6 +134,40 @@ describe('ProfilePage', () => {
       );
       expect(mockAuthContext.updateUser).toHaveBeenCalledWith(updatedUser);
       expect(screen.getByText('Perfil atualizado com sucesso!')).toBeInTheDocument();
+    });
+  });
+
+  it('uploads avatar via file attachment instead of URL input', async () => {
+    vi.mocked(userService.getProfile).mockResolvedValue(mockUser);
+    vi.mocked(mediaService.uploadImage).mockResolvedValue({
+      id: 'media-123',
+      ownerId: mockUser.id,
+      purpose: 'AVATAR',
+      status: 'CONFIRMED',
+      storageKey: 'uploads/avatar/user/avatar.png',
+      url: 'http://localhost:9000/studywithus-media/uploads/avatar/user/avatar.png',
+    });
+    const updatedWithAvatar: User = {
+      ...mockUser,
+      avatarUrl: 'http://localhost:9000/studywithus-media/uploads/avatar/user/avatar.png',
+    };
+    vi.mocked(userService.uploadAvatar).mockResolvedValue(updatedWithAvatar);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Selecionar foto de perfil')).toBeInTheDocument();
+    });
+
+    const fileInput = screen.getByLabelText('Selecionar foto de perfil') as HTMLInputElement;
+    const file = new File(['dummy-png'], 'avatar.png', { type: 'image/png' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mediaService.uploadImage).toHaveBeenCalledWith(file, 'AVATAR');
+      expect(userService.uploadAvatar).toHaveBeenCalledWith('media-123');
+      expect(mockAuthContext.updateUser).toHaveBeenCalledWith(updatedWithAvatar);
+      expect(screen.getByText('Foto de perfil atualizada com sucesso!')).toBeInTheDocument();
     });
   });
 });

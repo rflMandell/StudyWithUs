@@ -13,6 +13,11 @@ export const userService = {
     return response.data;
   },
 
+  uploadAvatar: async (mediaId: string): Promise<User> => {
+    const response = await api.post<User>('/users/me/avatar/upload', { mediaId });
+    return response.data;
+  },
+
   getUserStreak: async (): Promise<{ currentStreak: number; longestStreak: number; lastActivityDate?: string }> => {
     const response = await api.get<{ currentStreak: number; longestStreak: number; lastActivityDate?: string }>('/users/me/streak');
     return response.data;

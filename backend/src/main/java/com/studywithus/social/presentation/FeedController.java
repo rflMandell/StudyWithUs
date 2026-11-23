@@ -1,6 +1,7 @@
 package com.studywithus.social.presentation;
 
 import com.studywithus.identity.infrastructure.SecurityUserPrincipal;
+import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.social.application.FeedCursorResult;
 import com.studywithus.social.application.GetCommunityFeedUseCase;
 import com.studywithus.social.application.GetUserFeedQuery;
@@ -23,6 +24,7 @@ public class FeedController {
 
     private final GetUserFeedUseCase getUserFeedUseCase;
     private final GetCommunityFeedUseCase getCommunityFeedUseCase;
+    private final ObjectStoragePort objectStoragePort;
 
     @GetMapping("/feed")
     public ResponseEntity<FeedResponse> getFeed(
@@ -36,7 +38,7 @@ public class FeedController {
                 limit
         ));
 
-        return ResponseEntity.ok(FeedResponse.from(result));
+        return ResponseEntity.ok(FeedResponse.from(result, objectStoragePort::getPublicUrl));
     }
 
     @GetMapping("/communities/{communityId}/feed")
@@ -48,6 +50,6 @@ public class FeedController {
     ) {
         UUID callerId = principal != null ? principal.getId() : null;
         FeedCursorResult result = getCommunityFeedUseCase.execute(communityId, callerId, cursor, limit);
-        return ResponseEntity.ok(FeedResponse.from(result));
+        return ResponseEntity.ok(FeedResponse.from(result, objectStoragePort::getPublicUrl));
     }
 }

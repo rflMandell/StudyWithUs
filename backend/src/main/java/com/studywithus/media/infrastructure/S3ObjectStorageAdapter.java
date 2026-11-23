@@ -23,6 +23,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -56,8 +57,12 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
     @Value("${app.media.s3.secret-key}")
     private String secretKey;
 
+    @Value("${app.media.s3.public-read-policy:true}")
+    private boolean publicReadPolicy;
+
     private S3Client s3Client;
     private S3Presigner s3Presigner;
+    private volatile boolean bucketEnsured = false;
 
     @PostConstruct
     public void init() {
@@ -85,14 +90,46 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
         ensureBucketExists();
     }
 
-    private void ensureBucketExists() {
+    private synchronized void ensureBucketExists() {
+        if (bucketEnsured) {
+            return;
+        }
         try {
-            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
-        } catch (NoSuchBucketException ex) {
-            log.info("Creating S3 bucket: {}", bucket);
-            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+            try {
+                s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+            } catch (NoSuchBucketException ex) {
+                log.info("Creating S3 bucket: {}", bucket);
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+            }
+
+            if (publicReadPolicy) {
+                String policyJson = """
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Sid": "PublicReadMediaObjects",
+                              "Effect": "Allow",
+                              "Principal": "*",
+                              "Action": ["s3:GetObject"],
+                              "Resource": [
+                                "arn:aws:s3:::%s/uploads/*",
+                                "arn:aws:s3:::%s/thumbnails/*"
+                              ]
+                            }
+                          ]
+                        }
+                        """.formatted(bucket, bucket);
+                s3Client.putBucketPolicy(PutBucketPolicyRequest.builder()
+                        .bucket(bucket)
+                        .policy(policyJson)
+                        .build());
+                log.info("Ensured public-read policy on S3 bucket: {}", bucket);
+            }
+
+            bucketEnsured = true;
         } catch (Exception ex) {
-            log.warn("Could not verify S3 bucket {} on startup: {}", bucket, ex.getMessage());
+            log.warn("Could not verify/configure S3 bucket {}: {}", bucket, ex.getMessage());
         }
     }
 
@@ -109,6 +146,9 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
             long contentLength,
             Duration expiration
     ) {
+        if (!bucketEnsured) {
+            ensureBucketExists();
+        }
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(storageKey)
@@ -163,6 +203,9 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
 
     @Override
     public void upload(String storageKey, byte[] data, String contentType) {
+        if (!bucketEnsured) {
+            ensureBucketExists();
+        }
         s3Client.putObject(
                 PutObjectRequest.builder()
                         .bucket(bucket)

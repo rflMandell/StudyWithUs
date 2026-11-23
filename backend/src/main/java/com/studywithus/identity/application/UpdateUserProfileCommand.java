@@ -10,7 +10,6 @@ public record UpdateUserProfileCommand(
         String institution,
         String course,
         String studyGoal,
-        String avatarUrl,
         LocalDate birthDate
 ) {
 }

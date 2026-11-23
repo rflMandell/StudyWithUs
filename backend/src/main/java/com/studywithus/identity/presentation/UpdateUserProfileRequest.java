@@ -22,8 +22,6 @@ public record UpdateUserProfileRequest(
         @Size(max = 255, message = "Study goal must not exceed 255 characters")
         String studyGoal,
 
-        String avatarUrl,
-
         LocalDate birthDate
 ) {
     public UpdateUserProfileCommand toCommand(UUID userId) {
@@ -34,7 +32,6 @@ public record UpdateUserProfileRequest(
                 institution,
                 course,
                 studyGoal,
-                avatarUrl,
                 birthDate
         );
     }

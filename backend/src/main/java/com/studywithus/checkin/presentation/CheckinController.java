@@ -7,6 +7,7 @@ import com.studywithus.checkin.application.DeleteCheckinUseCase;
 import com.studywithus.checkin.application.GetCheckinDetailsUseCase;
 import com.studywithus.checkin.application.ListCommunityCheckinsUseCase;
 import com.studywithus.identity.infrastructure.SecurityUserPrincipal;
+import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.shared.domain.PagedResult;
 import com.studywithus.shared.presentation.PagedResponse;
 import jakarta.validation.Valid;
@@ -36,6 +37,7 @@ public class CheckinController {
     private final GetCheckinDetailsUseCase getCheckinDetailsUseCase;
     private final ListCommunityCheckinsUseCase listCommunityCheckinsUseCase;
     private final DeleteCheckinUseCase deleteCheckinUseCase;
+    private final ObjectStoragePort objectStoragePort;
 
     @PostMapping("/checkins")
     public ResponseEntity<CheckinResponse> createCheckin(
@@ -44,7 +46,8 @@ public class CheckinController {
             @AuthenticationPrincipal SecurityUserPrincipal principal
     ) {
         CheckinResult result = createCheckinUseCase.execute(request.toCommand(principal.getId(), idempotencyKey));
-        return ResponseEntity.status(HttpStatus.CREATED).body(CheckinResponse.from(result));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CheckinResponse.from(result, objectStoragePort::getPublicUrl));
     }
 
     @GetMapping("/checkins/{checkinId}")
@@ -54,7 +57,7 @@ public class CheckinController {
     ) {
         UUID callerId = principal != null ? principal.getId() : null;
         CheckinResult result = getCheckinDetailsUseCase.execute(checkinId, callerId);
-        return ResponseEntity.ok(CheckinResponse.from(result));
+        return ResponseEntity.ok(CheckinResponse.from(result, objectStoragePort::getPublicUrl));
     }
 
     @GetMapping("/communities/{communityId}/checkins")
@@ -68,7 +71,7 @@ public class CheckinController {
         int boundedPage = Math.max(page, 0);
         int boundedSize = Math.min(Math.max(size, 1), 100);
         PagedResult<CheckinResult> pagedResult = listCommunityCheckinsUseCase.execute(communityId, boundedPage, boundedSize, callerId);
-        return ResponseEntity.ok(PagedResponse.from(pagedResult, CheckinResponse::from));
+        return ResponseEntity.ok(PagedResponse.from(pagedResult, r -> CheckinResponse.from(r, objectStoragePort::getPublicUrl)));
     }
 
     @DeleteMapping("/checkins/{checkinId}")

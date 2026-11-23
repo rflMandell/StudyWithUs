@@ -41,7 +41,6 @@ export interface UpdateUserData {
   institution?: string;
   course?: string;
   studyGoal?: string;
-  avatarUrl?: string;
   birthDate?: string;
 }
 

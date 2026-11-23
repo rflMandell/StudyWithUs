@@ -26,7 +26,6 @@ public class UpdateUserProfileUseCase {
                 command.institution(),
                 command.course(),
                 command.studyGoal(),
-                command.avatarUrl(),
                 command.birthDate()
         );
 

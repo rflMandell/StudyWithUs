@@ -148,7 +148,6 @@ class ProfileIntegrationTest {
                 "USP Ribeirão",
                 "Biotecnologia",
                 "Concluir mestrado",
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
                 LocalDate.of(2000, 5, 15)
         );
 
@@ -162,8 +161,7 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.bio").value("Nova Bio Científica"))
                 .andExpect(jsonPath("$.institution").value("USP Ribeirão"))
                 .andExpect(jsonPath("$.course").value("Biotecnologia"))
-                .andExpect(jsonPath("$.studyGoal").value("Concluir mestrado"))
-                .andExpect(jsonPath("$.avatarUrl").value("https://images.unsplash.com/photo-1534528741775-53994a69daeb"));
+                .andExpect(jsonPath("$.studyGoal").value("Concluir mestrado"));
 
         // Bob accesses Alice's profile by ID
         mockMvc.perform(get("/api/v1/users/" + aliceId)

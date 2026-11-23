@@ -278,6 +278,10 @@ GET /uploads/{mediaId}
 
 O backend valida `storageKey`, ownership, extensão, tamanho máximo e MIME type real (magic bytes) antes de associar mídia ao recurso. Imagens passam por sanitização de metadados EXIF e geração assíncrona de thumbnails.
 
+Regras adicionais de mídia:
+- Fotos de perfil não podem ser enviadas via URL manual em `PATCH /users/me`; devem obrigatoriamente passar pelo fluxo de upload e confirmação e serem associadas via `POST /users/me/avatar/upload` (`mediaId`).
+- Fotos de check-in exigem `mediaKeys` previamente confirmadas para o propósito `CHECKIN`. As respostas de check-in e feed retornam `mediaUrls` (URLs públicas resolvidas no S3) além de `mediaKeys`.
+
 ## 9. OpenAPI
 
 A especificação oficial deverá ser:

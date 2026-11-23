@@ -269,24 +269,44 @@ export const ActivityFeed: React.FC = () => {
               )}
 
               {/* Media preview */}
-              {item.mediaKeys && item.mediaKeys.length > 0 && (
-                <div
-                  style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem 0.75rem',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '6px',
-                    border: '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.8rem',
-                    color: '#64748b',
-                  }}
-                >
-                  <Image size={16} />
-                  <span>{item.mediaKeys.length} anexo(s) incluído(s)</span>
+              {item.mediaUrls && item.mediaUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                  {item.mediaUrls.map((url, idx) => (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`Foto do check-in ${idx + 1}`}
+                      style={{
+                        maxHeight: '320px',
+                        maxWidth: '100%',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ))}
                 </div>
+              ) : (
+                item.mediaKeys &&
+                item.mediaKeys.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: '0.5rem',
+                      padding: '0.5rem 0.75rem',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '6px',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontSize: '0.8rem',
+                      color: '#64748b',
+                    }}
+                  >
+                    <Image size={16} />
+                    <span>{item.mediaKeys.length} anexo(s) incluído(s)</span>
+                  </div>
+                )
               )}
 
               <CommentSection

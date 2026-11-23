@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Send, Trash2, Image, BookOpen, Clock } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Send, Trash2, Image, BookOpen, Clock, X } from 'lucide-react';
 import { Checkin } from '../types/checkin';
 import { CommunityRole, CommunityMember } from '../types/community';
 import { checkinService } from '../services/checkinService';
+import { mediaService } from '../services/mediaService';
 import { AlertError } from './AlertError';
 import { CommentSection } from './CommentSection';
 
@@ -35,11 +36,31 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
 }) => {
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [caption, setCaption] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('');
-  const [showMediaInput, setShowMediaInput] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const clearSelectedFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const isModeratorOrHigher =
     currentUserRole === 'OWNER' || currentUserRole === 'ADMIN' || currentUserRole === 'MODERATOR';
@@ -61,10 +82,28 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
     loadCheckins();
   }, [communityId]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      mediaService.validateImageFile(file);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Arquivo de imagem inválido.');
+      e.target.value = '';
+    }
+  };
+
   const handleCreateCheckin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!caption.trim() && !mediaUrl.trim()) {
-      setError('Adicione uma legenda ou mídia para seu check-in.');
+    if (!caption.trim() && !selectedFile) {
+      setError('Adicione uma legenda ou anexe uma imagem para seu check-in.');
       return;
     }
 
@@ -72,7 +111,12 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
     setError(null);
 
     try {
-      const mediaKeys = mediaUrl.trim() ? [mediaUrl.trim()] : [];
+      let mediaKeys: string[] = [];
+      if (selectedFile) {
+        const uploaded = await mediaService.uploadImage(selectedFile, 'CHECKIN', communityId);
+        mediaKeys = [uploaded.storageKey];
+      }
+
       const idempotencyKey = generateUUID();
 
       await checkinService.createCheckin(
@@ -85,11 +129,14 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
       );
 
       setCaption('');
-      setMediaUrl('');
-      setShowMediaInput(false);
+      clearSelectedFile();
       await loadCheckins();
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.code || 'Erro ao publicar check-in.';
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.code ||
+        err.message ||
+        'Erro ao publicar check-in.';
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -133,28 +180,65 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
               style={{ resize: 'vertical', marginBottom: '0.75rem' }}
             />
 
-            {showMediaInput && (
-              <div style={{ marginBottom: '0.75rem' }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="URL ou chave de armazenamento da foto/mídia..."
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  disabled={isSubmitting}
+            {previewUrl && (
+              <div style={{ marginBottom: '0.75rem', position: 'relative', display: 'inline-block' }}>
+                <img
+                  src={previewUrl}
+                  alt="Pré-visualização do check-in"
+                  style={{
+                    maxHeight: '220px',
+                    maxWidth: '100%',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
                 />
+                <button
+                  type="button"
+                  onClick={clearSelectedFile}
+                  disabled={isSubmitting}
+                  title="Remover imagem"
+                  style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '6px',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                    color: '#ffffff',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+              aria-label="Anexar foto do check-in"
+            />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
                 type="button"
-                onClick={() => setShowMediaInput(!showMediaInput)}
+                onClick={() => (selectedFile ? clearSelectedFile() : fileInputRef.current?.click())}
+                disabled={isSubmitting}
                 className="btn btn-secondary"
                 style={{ width: 'auto', padding: '0.4rem 0.8rem', fontSize: '0.85rem', gap: '0.3rem' }}
               >
                 <Image size={16} />
-                <span>{showMediaInput ? 'Remover Foto' : 'Adicionar Foto'}</span>
+                <span>{selectedFile ? 'Remover Foto' : 'Anexar Foto'}</span>
               </button>
 
               <button
@@ -238,27 +322,47 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                   </p>
                 )}
 
-                {checkin.mediaKeys && checkin.mediaKeys.length > 0 && (
+                {checkin.mediaUrls && checkin.mediaUrls.length > 0 ? (
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                    {checkin.mediaKeys.map((key, idx) => (
-                      <div
+                    {checkin.mediaUrls.map((url, idx) => (
+                      <img
                         key={idx}
+                        src={url}
+                        alt={`Foto do check-in ${idx + 1}`}
                         style={{
-                          backgroundColor: '#f1f5f9',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '6px',
-                          fontSize: '0.85rem',
-                          color: '#334155',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
+                          maxHeight: '320px',
+                          maxWidth: '100%',
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0',
+                          objectFit: 'cover',
                         }}
-                      >
-                        <Image size={14} />
-                        <span>{key}</span>
-                      </div>
+                      />
                     ))}
                   </div>
+                ) : (
+                  checkin.mediaKeys &&
+                  checkin.mediaKeys.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                      {checkin.mediaKeys.map((key, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: '#f1f5f9',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            color: '#334155',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                          }}
+                        >
+                          <Image size={14} />
+                          <span>{key}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
                 )}
 
                 <CommentSection

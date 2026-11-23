@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Award,
+  Camera,
   CheckCircle2,
   Edit3,
   Flame,
   School,
   Sparkles,
+  Upload,
   Users,
   X,
   Save,
@@ -16,6 +18,7 @@ import { Navbar } from '../components/Navbar';
 import { getAvatarBorderStyle } from '../utils/levelCosmetics';
 import { User, UpdateUserData, UserBadge } from '../types/auth';
 import { userService } from '../services/userService';
+import { mediaService } from '../services/mediaService';
 import { AlertError } from '../components/AlertError';
 
 export const ProfilePage: React.FC = () => {
@@ -29,8 +32,10 @@ export const ProfilePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState<UpdateUserData>({
@@ -39,7 +44,6 @@ export const ProfilePage: React.FC = () => {
     institution: '',
     course: '',
     studyGoal: '',
-    avatarUrl: '',
     birthDate: '',
   });
 
@@ -57,7 +61,6 @@ export const ProfilePage: React.FC = () => {
         institution: data.institution || '',
         course: data.course || '',
         studyGoal: data.studyGoal || '',
-        avatarUrl: data.avatarUrl || '',
         birthDate: data.birthDate || '',
       });
 
@@ -84,6 +87,33 @@ export const ProfilePage: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const uploaded = await mediaService.uploadImage(file, 'AVATAR');
+      const updated = await userService.uploadAvatar(uploaded.id);
+      setProfile(updated);
+      updateUser(updated);
+      setSuccessMessage('Foto de perfil atualizada com sucesso!');
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.code ||
+        err.message ||
+        'Erro ao enviar foto de perfil.';
+      setError(msg);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name?.trim()) {
@@ -102,7 +132,6 @@ export const ProfilePage: React.FC = () => {
         institution: formData.institution?.trim() || undefined,
         course: formData.course?.trim() || undefined,
         studyGoal: formData.studyGoal?.trim() || undefined,
-        avatarUrl: formData.avatarUrl?.trim() || undefined,
         birthDate: formData.birthDate || undefined,
       });
 
@@ -173,31 +202,67 @@ export const ProfilePage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <div
-                style={{
-                  width: '76px',
-                  height: '76px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--primary-subtle, #eff6ff)',
-                  color: 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '2rem',
-                  overflow: 'hidden',
-                  border: getAvatarBorderStyle(profile.activeAvatarBorder),
-                  flexShrink: 0,
-                }}
-              >
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={profile.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  profile.name.charAt(0).toUpperCase()
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: '76px',
+                    height: '76px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--primary-subtle, #eff6ff)',
+                    color: 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '2rem',
+                    overflow: 'hidden',
+                    border: getAvatarBorderStyle(profile.activeAvatarBorder),
+                  }}
+                >
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    profile.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                {isOwnProfile && (
+                  <>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleAvatarFileChange}
+                      style={{ display: 'none' }}
+                      aria-label="Selecionar foto de perfil"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      title="Alterar foto de perfil"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--primary)',
+                        color: '#ffffff',
+                        border: '2px solid #ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: isUploadingAvatar ? 'wait' : 'pointer',
+                      }}
+                    >
+                      <Camera size={14} />
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -374,16 +439,18 @@ export const ProfilePage: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.25rem' }}>
-                    URL do Avatar (Foto de Perfil)
+                    Foto de Perfil
                   </label>
-                  <input
-                    type="url"
-                    name="avatarUrl"
-                    value={formData.avatarUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://exemplo.com/minha-foto.jpg"
-                    className="input"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="btn btn-secondary"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                  >
+                    <Upload size={15} />
+                    <span>{isUploadingAvatar ? 'Enviando foto...' : 'Anexar Imagem (JPEG, PNG, WebP)'}</span>
+                  </button>
                 </div>
 
                 <div>

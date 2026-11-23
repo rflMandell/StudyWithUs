@@ -42,7 +42,6 @@ public class User {
             String institution,
             String course,
             String studyGoal,
-            String avatarUrl,
             LocalDate birthDate
     ) {
         if (name != null && !name.isBlank()) {
@@ -59,9 +58,6 @@ public class User {
         }
         if (studyGoal != null) {
             this.studyGoal = studyGoal.trim();
-        }
-        if (avatarUrl != null) {
-            this.avatarUrl = avatarUrl.trim();
         }
         if (birthDate != null) {
             this.birthDate = birthDate;

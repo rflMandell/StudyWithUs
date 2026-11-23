@@ -72,7 +72,6 @@ class UpdateUserProfileUseCaseTest {
                 "New Uni",
                 "New Course",
                 "New Goal",
-                "https://avatar.url/img.png",
                 LocalDate.of(1999, 5, 20)
         );
 
@@ -84,7 +83,7 @@ class UpdateUserProfileUseCaseTest {
         assertThat(existingUser.getInstitution()).isEqualTo("New Uni");
         assertThat(existingUser.getCourse()).isEqualTo("New Course");
         assertThat(existingUser.getStudyGoal()).isEqualTo("New Goal");
-        assertThat(existingUser.getAvatarUrl()).isEqualTo("https://avatar.url/img.png");
+        assertThat(existingUser.getAvatarUrl()).isNull();
         assertThat(existingUser.getBirthDate()).isEqualTo(LocalDate.of(1999, 5, 20));
 
         verify(userRepository).save(existingUser);
@@ -99,7 +98,6 @@ class UpdateUserProfileUseCaseTest {
         UpdateUserProfileCommand command = new UpdateUserProfileCommand(
                 userId,
                 "Name",
-                null,
                 null,
                 null,
                 null,

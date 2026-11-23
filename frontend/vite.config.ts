@@ -11,6 +11,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/studywithus-media': {
+        target: 'http://localhost:9000',
+        changeOrigin: true,
+      },
     },
   },
   test: {
