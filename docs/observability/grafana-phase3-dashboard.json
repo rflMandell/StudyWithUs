@@ -1,0 +1,63 @@
+{
+  "title": "StudyWithUs - Fase 3 (Alta Escala, Feed, Mídia, Ligas & Analytics)",
+  "uid": "studywithus-phase3",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Feed Fan-out Latency (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(studywithus_feed_fanout_duration_seconds_bucket[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Feed Redis Cache Hit vs Miss Ratio",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(studywithus_feed_cache_hits_total[5m])", "legendFormat": "Hits" },
+        { "expr": "rate(studywithus_feed_cache_misses_total[5m])", "legendFormat": "Misses" },
+        { "expr": "rate(studywithus_feed_cache_fallbacks_total[5m])", "legendFormat": "Fallbacks" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Presigned URL Generation Latency (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(studywithus_media_presign_duration_seconds_bucket[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Object Storage Circuit Breaker State (0=CLOSED, 1=HALF_OPEN, 2=OPEN)",
+      "type": "stat",
+      "targets": [
+        { "expr": "studywithus_circuit_breaker_state{name=\"object-storage\"}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "XP Awarded & Level-Ups",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(studywithus_xp_awarded_total[5m])", "legendFormat": "XP/s" },
+        { "expr": "rate(studywithus_level_ups_total[5m])", "legendFormat": "Level-ups/s" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Study Analytics Events Recorded",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(studywithus_analytics_events_recorded_total[5m])" }
+      ]
+    }
+  ]
+}

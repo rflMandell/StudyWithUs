@@ -198,12 +198,15 @@ GET /actuator/metrics/{metricName}
 403 Forbidden
 404 Not Found
 409 Conflict
+413 Payload Too Large
 422 Unprocessable Entity
 429 Too Many Requests
 
 500 Internal Server Error
 503 Service Unavailable
 ```
+
+Códigos de erro de resiliência e segurança da Fase 3: `STORAGE_CIRCUIT_OPEN` (503), `SSRF_BLOCKED` (400), `INVALID_FILENAME` (400), `INVALID_STORAGE_KEY` (400), `COSMETIC_LOCKED` (403).
 
 ## 5. Error contract
 

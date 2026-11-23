@@ -9,7 +9,10 @@ import com.studywithus.media.domain.MediaPurpose;
 import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,9 @@ public class RequestUploadUrlUseCase implements UseCase<RequestUploadUrlCommand,
     private final ObjectStoragePort objectStoragePort;
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+
+    @Autowired(required = false)
+    private MeterRegistry meterRegistry;
 
     @Value("${app.media.max-file-size-bytes:5242880}")
     private long maxFileSizeBytes = 5242880L;
@@ -73,12 +79,18 @@ public class RequestUploadUrlUseCase implements UseCase<RequestUploadUrlCommand,
 
         MediaAsset saved = mediaAssetRepository.save(asset);
 
+        Timer.Sample presignSample = meterRegistry != null ? Timer.start() : null;
         ObjectStoragePort.PresignedUploadResult presigned = objectStoragePort.generatePresignedUploadUrl(
                 storageKey,
                 normalizedContentType,
                 command.sizeBytes(),
                 Duration.ofSeconds(presignExpirationSeconds)
         );
+        if (presignSample != null && meterRegistry != null) {
+            presignSample.stop(Timer.builder("studywithus_media_presign_duration_seconds")
+                    .description("Time spent generating presigned upload URLs")
+                    .register(meterRegistry));
+        }
 
         return new UploadUrlResult(
                 saved.getId(),
