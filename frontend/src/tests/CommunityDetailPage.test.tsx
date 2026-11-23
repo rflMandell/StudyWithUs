@@ -89,6 +89,7 @@ const mockMembers: CommunityMember[] = [
     userId: 'owner-id',
     username: 'owner_user',
     name: 'Owner User',
+    avatarUrl: 'https://example.com/owner-avatar.png',
     role: 'OWNER',
     status: 'ACTIVE',
     joinedAt: '2026-10-31T10:00:00Z',
@@ -224,6 +225,9 @@ describe('CommunityDetailPage', () => {
       expect(screen.getByText('5 dias de sequência')).toBeInTheDocument();
       expect(screen.getByText('Estudo do modelo OSI finalizado')).toBeInTheDocument();
       expect(screen.getByText(/Solicitações Pendentes \(1\)/)).toBeInTheDocument();
+      const avatarImg = screen.getByAltText('Owner User') as HTMLImageElement;
+      expect(avatarImg).toBeInTheDocument();
+      expect(avatarImg.src).toBe('https://example.com/owner-avatar.png');
     });
   });
 

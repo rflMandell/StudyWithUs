@@ -151,4 +151,40 @@ describe('CommentSection', () => {
       expect(screen.queryByText('Ótimo estudo de algoritmos!')).not.toBeInTheDocument();
     });
   });
+
+  it('renders author avatar image when avatarUrl is provided', async () => {
+    const commentWithAvatar: Comment = {
+      ...mockComment,
+      author: {
+        ...mockComment.author,
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+    };
+
+    vi.mocked(commentService.listComments).mockResolvedValue({
+      content: [commentWithAvatar],
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      totalPages: 1,
+      hasNext: false,
+    });
+
+    render(
+      <CommentSection
+        checkinId={checkinId}
+        initialCommentsCount={1}
+        isMember={true}
+        currentUserId={currentUserId}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /1 comentário/i }));
+
+    await waitFor(() => {
+      const avatarImg = screen.getByAltText('Meu Nome') as HTMLImageElement;
+      expect(avatarImg).toBeInTheDocument();
+      expect(avatarImg.src).toBe('https://example.com/avatar.png');
+    });
+  });
 });

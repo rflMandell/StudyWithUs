@@ -289,9 +289,19 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                         justifyContent: 'center',
                         fontWeight: 700,
                         fontSize: '0.95rem',
+                        overflow: 'hidden',
+                        flexShrink: 0,
                       }}
                     >
-                      {(author?.name || 'A').charAt(0).toUpperCase()}
+                      {author?.avatarUrl ? (
+                        <img
+                          src={author.avatarUrl}
+                          alt={author.name || 'Avatar'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        (author?.name || 'A').charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>

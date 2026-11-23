@@ -159,9 +159,19 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                             justifyContent: 'center',
                             fontSize: '0.75rem',
                             fontWeight: 600,
+                            overflow: 'hidden',
+                            flexShrink: 0,
                           }}
                         >
-                          {(comment.author.name || 'U').charAt(0).toUpperCase()}
+                          {comment.author.avatarUrl ? (
+                            <img
+                              src={comment.author.avatarUrl}
+                              alt={comment.author.name || 'Avatar'}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            (comment.author.name || 'U').charAt(0).toUpperCase()
+                          )}
                         </div>
                         <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
                           {comment.author.name}
