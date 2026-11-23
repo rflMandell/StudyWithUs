@@ -79,6 +79,11 @@ public class ChallengeRepositoryAdapter implements ChallengeRepository {
     }
 
     @Override
+    public boolean markCompletedIfNotCompleted(UUID challengeId, UUID userId, Instant completedAt) {
+        return participantRepository.markCompletedIfNotCompleted(challengeId, userId, completedAt) > 0;
+    }
+
+    @Override
     public Optional<ChallengeParticipant> findParticipant(UUID challengeId, UUID userId) {
         return participantRepository.findByIdChallengeIdAndIdUserId(challengeId, userId)
                 .map(ChallengeParticipantJpaEntity::toDomain);

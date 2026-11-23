@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 mkdir -p "${BACKUP_DIR}"

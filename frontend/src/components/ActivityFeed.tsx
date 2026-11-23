@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Newspaper, Users, Clock, Award, Image, RefreshCw, ChevronDown } from 'lucide-react';
 import { FeedItem } from '../types/feed';
 import { feedService } from '../services/feedService';
+import { useAuth } from '../hooks/useAuth';
 import { CommentSection } from './CommentSection';
 
 export const ActivityFeed: React.FC = () => {
+  const { user } = useAuth();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -270,6 +272,7 @@ export const ActivityFeed: React.FC = () => {
                 checkinId={item.id}
                 initialCommentsCount={item.commentsCount || 0}
                 isMember={true}
+                currentUserId={user?.id}
               />
             </div>
           ))}

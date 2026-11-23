@@ -31,6 +31,14 @@ public record UserProfileResponse(
         Instant createdAt
 ) {
     public static UserProfileResponse from(UserProfileResult result) {
+        return from(result, true);
+    }
+
+    public static UserProfileResponse fromPublic(UserProfileResult result) {
+        return from(result, false);
+    }
+
+    private static UserProfileResponse from(UserProfileResult result, boolean includePrivateFields) {
         List<UserBadgeResponse> badgeResponses = result.badges() != null
                 ? result.badges().stream().map(b -> new UserBadgeResponse(
                         b.getBadgeId(),
@@ -45,8 +53,8 @@ public record UserProfileResponse(
                 result.id(),
                 result.username(),
                 result.name(),
-                result.email(),
-                result.birthDate(),
+                includePrivateFields ? result.email() : null,
+                includePrivateFields ? result.birthDate() : null,
                 result.avatarUrl(),
                 result.institution(),
                 result.course(),

@@ -32,11 +32,32 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
     private final IdempotencyService idempotencyService;
     private final ApplicationEventPublisher eventPublisher;
 
+    private static final int LOCK_STRIPES = 256;
+    private final Object[] idempotencyLocks = createLocks();
+
+    private static Object[] createLocks() {
+        Object[] locks = new Object[LOCK_STRIPES];
+        for (int i = 0; i < LOCK_STRIPES; i++) {
+            locks[i] = new Object();
+        }
+        return locks;
+    }
+
     @Override
     @Transactional
     public CheckinResult execute(CreateCheckinCommand command) {
         if (command.idempotencyKey() != null && !command.idempotencyKey().isBlank()) {
             String cacheKey = "checkin:" + command.userId() + ":" + command.idempotencyKey();
+            Object lock = idempotencyLocks[Math.floorMod(cacheKey.hashCode(), LOCK_STRIPES)];
+            synchronized (lock) {
+                return executeInternal(command, cacheKey);
+            }
+        }
+        return executeInternal(command, null);
+    }
+
+    private CheckinResult executeInternal(CreateCheckinCommand command, String cacheKey) {
+        if (cacheKey != null) {
             Optional<UUID> cachedId = idempotencyService.get(cacheKey, UUID.class);
             if (cachedId.isPresent()) {
                 Optional<Checkin> existing = checkinRepository.findById(cachedId.get());
@@ -71,8 +92,7 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
 
         Checkin saved = checkinRepository.save(checkin);
 
-        if (command.idempotencyKey() != null && !command.idempotencyKey().isBlank()) {
-            String cacheKey = "checkin:" + command.userId() + ":" + command.idempotencyKey();
+        if (cacheKey != null) {
             idempotencyService.set(cacheKey, saved.getId(), 300);
         }
 

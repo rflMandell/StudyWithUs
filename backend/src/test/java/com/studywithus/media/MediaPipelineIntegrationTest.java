@@ -309,8 +309,23 @@ class MediaPipelineIntegrationTest {
                 .andReturn();
         ReportResponse report = objectMapper.readValue(reportRes.getResponse().getContentAsString(), ReportResponse.class);
 
+        com.studywithus.identity.domain.User adminUser = com.studywithus.identity.domain.User.builder()
+                .id(ownerId)
+                .username("media_owner")
+                .email("media_owner@uni.edu")
+                .status(com.studywithus.identity.domain.UserStatus.ACTIVE)
+                .build();
+        com.studywithus.identity.infrastructure.SecurityUserPrincipal adminPrincipal =
+                new com.studywithus.identity.infrastructure.SecurityUserPrincipal(adminUser, "");
+
         mockMvc.perform(post("/api/v1/reports/" + report.id() + "/resolve")
-                        .header("Authorization", "Bearer " + ownerToken)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(
+                                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                                        adminPrincipal,
+                                        null,
+                                        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"))
+                                )
+                        ))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ResolveReportRequest(
                                 ModerationAction.REMOVE_CONTENT, "Confirmed offensive"))))
@@ -323,5 +338,47 @@ class MediaPipelineIntegrationTest {
 
         mockMvc.perform(get("/api/v1/media/public/" + checkinStorageKey))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("Rejects upload with mismatched contentLength or non-PENDING media asset")
+    void rejectsMismatchedLengthAndOverwriteAfterConfirm() throws Exception {
+        byte[] pngBytes = createSamplePng(100, 100);
+        MvcResult reqRes = mockMvc.perform(post("/api/v1/uploads")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RequestUploadUrlRequest(
+                                MediaPurpose.AVATAR, "strict.png", "image/png", pngBytes.length, null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UploadUrlResponse upload = objectMapper.readValue(reqRes.getResponse().getContentAsString(), UploadUrlResponse.class);
+        URI uri = URI.create(upload.presignedUrl());
+        String putUrl = uri.getPath() + "?" + uri.getQuery();
+
+        // 1. Mismatched body size vs signed contentLength
+        mockMvc.perform(put(putUrl)
+                        .contentType("image/png")
+                        .content("wrong-size".getBytes()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CONTENT_LENGTH"));
+
+        // 2. Matching body size succeeds
+        mockMvc.perform(put(putUrl)
+                        .contentType("image/png")
+                        .content(pngBytes))
+                .andExpect(status().isOk());
+
+        // 3. Confirm upload
+        mockMvc.perform(post("/api/v1/uploads/" + upload.mediaId() + "/confirm")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk());
+
+        // 4. Attempting to overwrite after confirmation is rejected with 409 CONFLICT
+        mockMvc.perform(put(putUrl)
+                        .contentType("image/png")
+                        .content(pngBytes))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("MEDIA_ALREADY_UPLOADED"));
     }
 }

@@ -34,8 +34,11 @@ public class LocalObjectStorageAdapter implements ObjectStoragePort {
     @Value("${app.media.upload-base-url:http://localhost:8080/api/v1/media/storage}")
     private String uploadBaseUrl;
 
-    @Value("${app.media.presign-secret:studywithus-media-presign-secret-key-2026}")
+    @Value("${app.media.presign-secret}")
     private String presignSecret;
+
+    @Value("${app.media.max-file-size-bytes:5242880}")
+    private long maxFileSizeBytes;
 
     private Path rootPath;
 
@@ -54,11 +57,12 @@ public class LocalObjectStorageAdapter implements ObjectStoragePort {
     ) {
         Instant expiresAt = Instant.now().plus(expiration);
         long expiresEpoch = expiresAt.getEpochSecond();
-        String signature = sign(storageKey, contentType, expiresEpoch);
-        String url = String.format("%s/%s?expires=%d&signature=%s",
+        String signature = sign(storageKey, contentType, contentLength, expiresEpoch);
+        String url = String.format("%s/%s?expires=%d&contentLength=%d&signature=%s",
                 stripTrailingSlash(uploadBaseUrl),
                 storageKey,
                 expiresEpoch,
+                contentLength,
                 signature);
         return new PresignedUploadResult(
                 url,
@@ -127,12 +131,19 @@ public class LocalObjectStorageAdapter implements ObjectStoragePort {
         return stripTrailingSlash(publicBaseUrl) + "/" + storageKey;
     }
 
-    public boolean verifySignature(String storageKey, String contentType, long expiresEpoch, String signature) {
+    public long getMaxFileSizeBytes() {
+        return maxFileSizeBytes;
+    }
+
+    public boolean verifySignature(String storageKey, String contentType, Long contentLength, long expiresEpoch, String signature) {
+        if (signature == null || contentLength == null || contentLength <= 0 || contentLength > maxFileSizeBytes) {
+            return false;
+        }
         if (Instant.now().getEpochSecond() > expiresEpoch) {
             return false;
         }
         String normalizedType = normalizeContentType(contentType);
-        String expected = sign(storageKey, normalizedType, expiresEpoch);
+        String expected = sign(storageKey, normalizedType, contentLength, expiresEpoch);
         return MessageDigest.isEqual(
                 expected.getBytes(StandardCharsets.UTF_8),
                 signature.getBytes(StandardCharsets.UTF_8)
@@ -148,12 +159,12 @@ public class LocalObjectStorageAdapter implements ObjectStoragePort {
         return base.trim().toLowerCase();
     }
 
-    private String sign(String storageKey, String contentType, long expiresEpoch) {
+    private String sign(String storageKey, String contentType, long contentLength, long expiresEpoch) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec keySpec = new SecretKeySpec(presignSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
             mac.init(keySpec);
-            String payload = storageKey + ":" + normalizeContentType(contentType) + ":" + expiresEpoch;
+            String payload = storageKey + ":" + normalizeContentType(contentType) + ":" + contentLength + ":" + expiresEpoch;
             byte[] rawHmac = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(rawHmac);
         } catch (Exception ex) {

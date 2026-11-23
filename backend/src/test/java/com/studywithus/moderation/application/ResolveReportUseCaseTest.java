@@ -16,6 +16,9 @@ import com.studywithus.moderation.domain.ReportRepository;
 import com.studywithus.moderation.domain.ReportResolvedEvent;
 import com.studywithus.moderation.domain.ReportStatus;
 import com.studywithus.moderation.domain.ReportTargetType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studywithus.media.domain.MediaAssetRepository;
+import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.notification.application.CreateInAppNotificationUseCase;
 import com.studywithus.shared.domain.DomainException;
 import com.studywithus.social.domain.Comment;
@@ -62,12 +65,17 @@ class ResolveReportUseCaseTest {
     private CommunityMemberRepository communityMemberRepository;
 
     @Mock
+    private MediaAssetRepository mediaAssetRepository;
+
+    @Mock
+    private ObjectStoragePort objectStoragePort;
+
+    @Mock
     private CreateInAppNotificationUseCase createInAppNotificationUseCase;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks
     private ResolveReportUseCase useCase;
 
     private UUID reviewerId;
@@ -80,6 +88,25 @@ class ResolveReportUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        ModerationAuthorizationService moderationAuthorizationService = new ModerationAuthorizationService(
+                checkinRepository,
+                commentRepository,
+                communityMemberRepository,
+                mediaAssetRepository
+        );
+        useCase = new ResolveReportUseCase(
+                reportRepository,
+                auditLogRepository,
+                checkinRepository,
+                commentRepository,
+                userRepository,
+                mediaAssetRepository,
+                objectStoragePort,
+                createInAppNotificationUseCase,
+                moderationAuthorizationService,
+                new ObjectMapper(),
+                eventPublisher
+        );
         reviewerId = UUID.randomUUID();
         reportId = UUID.randomUUID();
         commentId = UUID.randomUUID();

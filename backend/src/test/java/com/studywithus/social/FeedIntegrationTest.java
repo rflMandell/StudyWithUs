@@ -8,6 +8,8 @@ import com.studywithus.community.presentation.CommunityResponse;
 import com.studywithus.community.presentation.CreateCommunityRequest;
 import com.studywithus.identity.presentation.AuthResponse;
 import com.studywithus.identity.presentation.RegisterRequest;
+import com.studywithus.social.domain.Follow;
+import com.studywithus.social.domain.FollowRepository;
 import com.studywithus.social.presentation.FeedResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -44,6 +46,9 @@ class FeedIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private FollowRepository followRepository;
 
     private static String aliceToken;
     private static UUID aliceId;
@@ -164,7 +169,7 @@ class FeedIntegrationTest {
 
         FeedResponse bobFeed = objectMapper.readValue(resBobFeed.getResponse().getContentAsString(), FeedResponse.class);
         assertThat(bobFeed.content()).hasSize(1);
-        assertThat(bobFeed.nextCursor()).isNotNull();
+        assertThat(bobFeed.nextCursor()).isNull();
 
         // Charlie (non-member) requests feed -> empty feed
         mockMvc.perform(get("/api/v1/feed")
@@ -234,6 +239,7 @@ class FeedIntegrationTest {
         assertThat(page2.content()).hasSize(1);
         assertThat(page2.content().get(0).id()).isEqualTo(checkin1Id);
         assertThat(page2.hasMore()).isFalse();
+        assertThat(page2.nextCursor()).isNull();
     }
 
     @Test
@@ -251,5 +257,63 @@ class FeedIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[?(@.id == '" + checkin3Id + "')]").doesNotExist())
                 .andExpect(jsonPath("$.content[0].id").value(checkin2Id.toString()));
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("Private community checkins from followed users are excluded and malformed cursor returns 400")
+    void shouldExcludePrivateCommunityCheckinsFromFollowerFeedAndRejectMalformedCursor() throws Exception {
+        // Charlie follows Alice (public community) and Bob (private community)
+        followRepository.save(Follow.builder()
+                .followerId(charlieId)
+                .followingId(aliceId)
+                .createdAt(java.time.Instant.now())
+                .build());
+        followRepository.save(Follow.builder()
+                .followerId(charlieId)
+                .followingId(bobId)
+                .createdAt(java.time.Instant.now())
+                .build());
+
+        // Bob creates a PRIVATE community (Charlie is NOT a member)
+        MvcResult privCommRes = mockMvc.perform(post("/api/v1/communities")
+                        .header("Authorization", "Bearer " + bobToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateCommunityRequest(
+                                "Comunidade Privada Feed",
+                                "Apenas membros",
+                                null,
+                                CommunityVisibility.PRIVATE,
+                                "America/Sao_Paulo"
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID privateCommId = objectMapper.readValue(privCommRes.getResponse().getContentAsString(), CommunityResponse.class).id();
+
+        // Bob posts a checkin in the PRIVATE community
+        MvcResult privCheckinRes = mockMvc.perform(post("/api/v1/checkins")
+                        .header("Authorization", "Bearer " + bobToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateCheckinRequest(
+                                privateCommId,
+                                "Checkin secreto na comunidade privada",
+                                List.of()
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID privateCheckinId = objectMapper.readValue(privCheckinRes.getResponse().getContentAsString(), CheckinResponse.class).id();
+
+        // Charlie's feed should include Alice's public checkins, but NEVER the private community checkin
+        mockMvc.perform(get("/api/v1/feed")
+                        .header("Authorization", "Bearer " + charlieToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == '" + checkin2Id + "')]").exists())
+                .andExpect(jsonPath("$.content[?(@.id == '" + privateCheckinId + "')]").doesNotExist());
+
+        // Malformed cursor should return 400 BAD_REQUEST
+        mockMvc.perform(get("/api/v1/feed?cursor=malformed-cursor-value")
+                        .header("Authorization", "Bearer " + charlieToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_FEED_CURSOR"));
     }
 }

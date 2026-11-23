@@ -43,4 +43,12 @@ public class RankingPeriod {
     public boolean isActive() {
         return status == RankingPeriodStatus.ACTIVE;
     }
+
+    public boolean isExpired() {
+        return endsAt != null && Instant.now().isAfter(endsAt);
+    }
+
+    public void close() {
+        this.status = RankingPeriodStatus.CLOSED;
+    }
 }

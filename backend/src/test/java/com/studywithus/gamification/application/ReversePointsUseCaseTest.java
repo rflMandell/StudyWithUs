@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,26 +58,20 @@ class ReversePointsUseCaseTest {
                 .createdAt(Instant.now())
                 .build();
 
-        User user = User.builder()
-                .id(userId)
-                .lifetimePoints(60)
-                .build();
-
         when(pointTransactionRepository.findById(transactionId)).thenReturn(Optional.of(original));
+        when(pointTransactionRepository.markReversedIfNotReversed(eq(transactionId), any(Instant.class), any(UUID.class)))
+                .thenReturn(true);
         when(pointTransactionRepository.save(any(PointTransaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         PointTransactionResult result = reversePointsUseCase.execute(new ReversePointsCommand(transactionId));
 
         assertThat(result.amount()).isEqualTo(-10);
         assertThat(result.type()).isEqualTo(PointTransactionType.REVERSAL);
-        assertThat(original.isReversed()).isTrue();
-        assertThat(original.getReversalId()).isEqualTo(result.id());
-        assertThat(user.getLifetimePoints()).isEqualTo(50);
 
-        verify(pointTransactionRepository, times(2)).save(any(PointTransaction.class));
-        verify(userRepository).save(user);
+        verify(pointTransactionRepository).markReversedIfNotReversed(eq(transactionId), any(Instant.class), eq(result.id()));
+        verify(pointTransactionRepository).save(any(PointTransaction.class));
+        verify(pointTransactionRepository).adjustUserLifetimePoints(userId, -10L);
         verify(eventPublisher).publishEvent(any(PointsReversedEvent.class));
     }
 

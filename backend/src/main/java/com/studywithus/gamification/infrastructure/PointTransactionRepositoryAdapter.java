@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,5 +65,15 @@ public class PointTransactionRepositoryAdapter implements PointTransactionReposi
     @Override
     public long calculateTotalPointsByUserAndCommunity(UUID userId, UUID communityId) {
         return repository.sumAmountByUserIdAndCommunityId(userId, communityId);
+    }
+
+    @Override
+    public boolean markReversedIfNotReversed(UUID id, Instant reversedAt, UUID reversalId) {
+        return repository.markReversedIfNotReversed(id, reversedAt, reversalId) > 0;
+    }
+
+    @Override
+    public void adjustUserLifetimePoints(UUID userId, long delta) {
+        repository.adjustUserLifetimePoints(userId, delta);
     }
 }

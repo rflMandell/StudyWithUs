@@ -8,9 +8,12 @@ import com.studywithus.subscription.domain.CheckoutSession;
 import com.studywithus.subscription.domain.PaymentProviderPort;
 import com.studywithus.subscription.domain.Subscription;
 import com.studywithus.subscription.domain.SubscriptionCreatedEvent;
+import com.studywithus.subscription.domain.SubscriptionEvent;
+import com.studywithus.subscription.domain.SubscriptionEventRepository;
 import com.studywithus.subscription.domain.SubscriptionPlan;
 import com.studywithus.subscription.domain.SubscriptionProvider;
 import com.studywithus.subscription.domain.SubscriptionRepository;
+import com.studywithus.subscription.domain.SubscriptionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InitiateSubscriptionUseCase implements UseCase<InitiateSubscriptionCommand, InitiateSubscriptionResult> {
 
     private final SubscriptionRepository subscriptionRepository;
+    private final SubscriptionEventRepository subscriptionEventRepository;
     private final UserRepository userRepository;
     private final PaymentProviderPort paymentProviderPort;
     private final ApplicationEventPublisher eventPublisher;
@@ -50,7 +54,9 @@ public class InitiateSubscriptionUseCase implements UseCase<InitiateSubscription
         Subscription subscription = subscriptionRepository.findByUserId(command.userId())
                 .map(existing -> {
                     existing.setExternalId(session.sessionId());
-                    existing.setPlan(targetPlan);
+                    if (existing.getStatus() == SubscriptionStatus.PENDING) {
+                        existing.setPlan(targetPlan);
+                    }
                     return existing;
                 })
                 .orElseGet(() -> Subscription.createPending(
@@ -62,17 +68,24 @@ public class InitiateSubscriptionUseCase implements UseCase<InitiateSubscription
 
         Subscription saved = subscriptionRepository.save(subscription);
 
+        subscriptionEventRepository.save(SubscriptionEvent.create(
+                saved.getId(),
+                "checkout:" + session.sessionId(),
+                "checkout.session.created",
+                "{\"plan\":\"" + targetPlan.name() + "\"}"
+        ));
+
         eventPublisher.publishEvent(new SubscriptionCreatedEvent(
                 saved.getId(),
                 saved.getUserId(),
-                saved.getPlan()
+                targetPlan
         ));
 
         return new InitiateSubscriptionResult(
                 saved.getId(),
                 session.sessionId(),
                 session.checkoutUrl(),
-                saved.getPlan()
+                targetPlan
         );
     }
 }

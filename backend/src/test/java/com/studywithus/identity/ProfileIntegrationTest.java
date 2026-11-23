@@ -174,7 +174,9 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.institution").value("USP Ribeirão"))
                 .andExpect(jsonPath("$.course").value("Biotecnologia"))
                 .andExpect(jsonPath("$.currentPoints").value(10))
-                .andExpect(jsonPath("$.checkinsCount").value(1));
+                .andExpect(jsonPath("$.checkinsCount").value(1))
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.birthDate").doesNotExist());
     }
 
     @Test

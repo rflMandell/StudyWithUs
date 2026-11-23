@@ -2,6 +2,10 @@ package com.studywithus.social.application;
 
 import com.studywithus.checkin.domain.Checkin;
 import com.studywithus.checkin.domain.CheckinRepository;
+import com.studywithus.community.domain.Community;
+import com.studywithus.community.domain.CommunityMemberRepository;
+import com.studywithus.community.domain.CommunityRepository;
+import com.studywithus.community.domain.CommunityVisibility;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.shared.domain.DomainException;
@@ -27,6 +31,8 @@ public class ListCommentsUseCase {
 
     private final CommentRepository commentRepository;
     private final CheckinRepository checkinRepository;
+    private final CommunityRepository communityRepository;
+    private final CommunityMemberRepository communityMemberRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
@@ -34,6 +40,20 @@ public class ListCommentsUseCase {
         Checkin checkin = checkinRepository.findById(query.checkinId())
                 .filter(Checkin::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
+
+        Community community = communityRepository.findById(checkin.getCommunityId())
+                .filter(Community::isActive)
+                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
+
+        if (community.getVisibility() == CommunityVisibility.PRIVATE) {
+            if (query.callerId() == null || !communityMemberRepository.isUserActiveMember(community.getId(), query.callerId())) {
+                throw new DomainException(
+                        HttpStatus.FORBIDDEN,
+                        "COMMUNITY_NOT_A_MEMBER",
+                        "Apenas membros ativos da comunidade podem visualizar comentários deste check-in"
+                );
+            }
+        }
 
         int page = Math.max(0, query.page());
         int size = query.size() > 0 ? Math.min(query.size(), 100) : 20;

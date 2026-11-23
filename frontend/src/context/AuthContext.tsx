@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useEffect, useState } from 'react';
 import { AxiosError } from 'axios';
 import { ApiError, LoginCredentials, RegisterData, User } from '../types/auth';
 import { authService } from '../services/authService';
+import { realtimeService } from '../services/realtimeService';
 
 export interface AuthContextType {
   user: User | null;
@@ -58,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadCurrentUser();
 
     const handleUnauthorized = () => {
+      realtimeService.disconnect();
       setUser(null);
     };
 
@@ -66,6 +68,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
   }, [loadCurrentUser]);
+
+  useEffect(() => {
+    if (user) {
+      realtimeService.connect();
+    }
+  }, [user]);
 
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
@@ -76,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await authService.getMe();
       setUser(userData);
     } catch (err) {
+      authService.clearTokens();
       const msg = formatErrorMessage(err);
       setError(msg);
       throw err;
@@ -93,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await authService.getMe();
       setUser(userData);
     } catch (err) {
+      authService.clearTokens();
       const msg = formatErrorMessage(err);
       setError(msg);
       throw err;
@@ -106,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.logout();
     } finally {
+      realtimeService.disconnect();
       setUser(null);
       setIsLoading(false);
     }

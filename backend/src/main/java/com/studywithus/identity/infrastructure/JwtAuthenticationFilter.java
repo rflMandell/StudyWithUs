@@ -47,6 +47,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.isTokenValid(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UUID userId = jwtService.extractUserId(jwt);
                 UserDetails userDetails = userDetailsService.loadUserById(userId);
+                if (!userDetails.isEnabled()) {
+                    log.debug("User {} is inactive/disabled; skipping authentication", userId);
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,

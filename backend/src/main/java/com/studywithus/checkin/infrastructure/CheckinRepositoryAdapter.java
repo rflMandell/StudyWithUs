@@ -87,6 +87,17 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
             Instant cursor,
             int limit
     ) {
+        return findFeedCheckins(communityIds, followingIds, cursor, null, limit);
+    }
+
+    @Override
+    public List<Checkin> findFeedCheckins(
+            Collection<UUID> communityIds,
+            Collection<UUID> followingIds,
+            Instant cursorTime,
+            UUID cursorId,
+            int limit
+    ) {
         boolean hasCommunities = communityIds != null && !communityIds.isEmpty();
         boolean hasFollowing = followingIds != null && !followingIds.isEmpty();
 
@@ -97,7 +108,7 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
         Pageable pageable = PageRequest.of(0, limit);
         List<CheckinJpaEntity> entities;
 
-        if (cursor == null) {
+        if (cursorTime == null) {
             if (hasCommunities && hasFollowing) {
                 entities = repository.findFeedByCommunitiesAndFollowing(communityIds, followingIds, pageable);
             } else if (hasCommunities) {
@@ -105,16 +116,44 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
             } else {
                 entities = repository.findFeedByFollowing(followingIds, pageable);
             }
+        } else if (cursorId == null) {
+            if (hasCommunities && hasFollowing) {
+                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursorTime, pageable);
+            } else if (hasCommunities) {
+                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursorTime, pageable);
+            } else {
+                entities = repository.findFeedByFollowingWithCursor(followingIds, cursorTime, pageable);
+            }
         } else {
             if (hasCommunities && hasFollowing) {
-                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursor, pageable);
+                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursorTime, cursorId, pageable);
             } else if (hasCommunities) {
-                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursor, pageable);
+                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursorTime, cursorId, pageable);
             } else {
-                entities = repository.findFeedByFollowingWithCursor(followingIds, cursor, pageable);
+                entities = repository.findFeedByFollowingWithCursor(followingIds, cursorTime, cursorId, pageable);
             }
         }
 
         return entities.stream().map(CheckinJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsActiveByUserIdBetween(UUID userId, Instant startInclusive, Instant endExclusive) {
+        return repository.existsActiveByUserIdBetween(userId, startInclusive, endExclusive);
+    }
+
+    @Override
+    public boolean existsActiveByUserIdAndCommunityIdBetween(UUID userId, UUID communityId, Instant startInclusive, Instant endExclusive) {
+        return repository.existsActiveByUserIdAndCommunityIdBetween(userId, communityId, startInclusive, endExclusive);
+    }
+
+    @Override
+    public List<Instant> findActiveCreatedAtByUserId(UUID userId) {
+        return repository.findActiveCreatedAtByUserId(userId);
+    }
+
+    @Override
+    public List<Instant> findActiveCreatedAtByUserIdAndCommunityId(UUID userId, UUID communityId) {
+        return repository.findActiveCreatedAtByUserIdAndCommunityId(userId, communityId);
     }
 }

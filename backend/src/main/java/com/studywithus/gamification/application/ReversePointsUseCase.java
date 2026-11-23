@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class ReversePointsUseCase implements UseCase<ReversePointsCommand, PointTransactionResult> {
@@ -34,15 +36,22 @@ public class ReversePointsUseCase implements UseCase<ReversePointsCommand, Point
         int reversalAmount = -Math.abs(original.getAmount());
         PointTransaction reversal = PointTransaction.createReversal(original, reversalAmount);
 
-        original.markReversed(reversal.getId());
+        Instant now = Instant.now();
+        boolean claimed = pointTransactionRepository.markReversedIfNotReversed(
+                original.getId(),
+                now,
+                reversal.getId()
+        );
+        if (!claimed) {
+            throw new DomainException(HttpStatus.CONFLICT, "TRANSACTION_ALREADY_REVERSED", "Transaction has already been reversed");
+        }
 
-        pointTransactionRepository.save(original);
         PointTransaction savedReversal = pointTransactionRepository.save(reversal);
 
-        userRepository.findById(original.getUserId()).ifPresent(user -> {
-            user.setLifetimePoints(Math.max(0, user.getLifetimePoints() - Math.abs(original.getAmount())));
-            userRepository.save(user);
-        });
+        pointTransactionRepository.adjustUserLifetimePoints(
+                original.getUserId(),
+                -Math.abs((long) original.getAmount())
+        );
 
         eventPublisher.publishEvent(new PointsReversedEvent(
                 savedReversal.getId(),

@@ -1,6 +1,7 @@
 package com.studywithus.gamification.application;
 
 import com.studywithus.checkin.domain.CheckinCreatedEvent;
+import com.studywithus.checkin.domain.CheckinDeletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,6 +26,22 @@ public class StreakEventListener {
             );
         } catch (Exception e) {
             log.error("Failed to update streak for userId: {}, communityId: {}", event.userId(), event.communityId(), e);
+        }
+    }
+
+    @EventListener
+    public void onCheckinDeleted(CheckinDeletedEvent event) {
+        log.info("StreakEventListener received CheckinDeletedEvent for userId: {}, communityId: {}",
+                event.userId(), event.communityId());
+        try {
+            recordActivityStreakUseCase.recomputeOnCheckinDeleted(
+                    event.userId(),
+                    event.communityId(),
+                    event.occurredAt()
+            );
+        } catch (Exception e) {
+            log.error("Failed to recompute streak on checkin delete for userId: {}, communityId: {}",
+                    event.userId(), event.communityId(), e);
         }
     }
 }

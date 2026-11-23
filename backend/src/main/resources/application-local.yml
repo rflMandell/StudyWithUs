@@ -3,11 +3,29 @@ spring:
     activate:
       on-profile: local
 
+  datasource:
+    password: ${DB_PASSWORD:studywithus_pass}
+
   jpa:
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+
+app:
+  media:
+    presign-secret: ${MEDIA_PRESIGN_SECRET:studywithus-media-presign-secret-key-2026}
+    s3:
+      access-key: ${MEDIA_S3_ACCESS_KEY:studywithus_minio}
+      secret-key: ${MEDIA_S3_SECRET_KEY:studywithus_minio_pass}
+
+subscription:
+  webhook:
+    secret: ${SUBSCRIPTION_WEBHOOK_SECRET:studywithus-local-webhook-secret-2026}
 
 logging:
   level:

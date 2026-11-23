@@ -56,3 +56,10 @@ app:
     presign-secret: test-media-presign-secret-key
     presign-expiration-seconds: 300
     max-file-size-bytes: 5242880
+    s3:
+      access-key: test_minio
+      secret-key: test_minio_pass
+
+subscription:
+  webhook:
+    secret: test-webhook-secret-2026

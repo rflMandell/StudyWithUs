@@ -70,6 +70,15 @@ public class ChallengeProgressTracker {
         int oldProgress = participant.getProgress();
         boolean justCompleted = participant.incrementProgress(challenge.getTargetValue());
 
+        boolean shouldDistributeRewards = false;
+        if (justCompleted) {
+            shouldDistributeRewards = challengeRepository.markCompletedIfNotCompleted(
+                    challenge.getId(),
+                    participant.getUserId(),
+                    participant.getCompletedAt()
+            );
+        }
+
         challengeRepository.saveParticipant(participant);
 
         eventPublisher.publishEvent(new ChallengeProgressUpdatedEvent(
@@ -80,7 +89,7 @@ public class ChallengeProgressTracker {
                 challenge.getTargetValue()
         ));
 
-        if (justCompleted) {
+        if (shouldDistributeRewards) {
             log.info("User {} successfully completed challenge {} ('{}')!",
                     participant.getUserId(), challenge.getId(), challenge.getTitle());
 

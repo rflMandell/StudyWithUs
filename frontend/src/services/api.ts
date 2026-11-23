@@ -47,11 +47,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Do not attempt refresh on auth login/register/refresh endpoints
+    // Do not attempt refresh on auth login/register/refresh/logout endpoints
     if (
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/register') ||
-      originalRequest.url?.includes('/auth/refresh')
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/logout')
     ) {
       return Promise.reject(error);
     }
@@ -65,6 +66,7 @@ api.interceptors.response.use(
     }
 
     if (isRefreshing) {
+      originalRequest._retry = true;
       return new Promise<string>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })

@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,21 +33,28 @@ public class UpdateCommunityRankingUseCase {
         entry.addPoints(pointsDelta);
         rankingEntryRepository.save(entry);
 
-        // Recalculate positions for all entries in the active period
+        // Recalculate positions for all entries in the active period, persisting only changed rows
         List<RankingEntry> entries = rankingEntryRepository.findByPeriodIdOrderByPointsDesc(period.getId());
+        List<RankingEntry> changedEntries = new ArrayList<>();
 
         int currentPosition = 1;
         int userUpdatedPosition = 1;
         for (RankingEntry e : entries) {
-            e.updatePosition(currentPosition);
+            if (e.getPosition() != currentPosition) {
+                e.updatePosition(currentPosition);
+                changedEntries.add(e);
+            }
             if (e.getUserId().equals(userId)) {
                 userUpdatedPosition = currentPosition;
             }
             currentPosition++;
         }
 
-        rankingEntryRepository.saveAll(entries);
-        log.info("Recalculated ranking for communityId: {}, periodId: {}, total entries: {}", communityId, period.getId(), entries.size());
+        if (!changedEntries.isEmpty()) {
+            rankingEntryRepository.saveAll(changedEntries);
+        }
+        log.info("Recalculated ranking for communityId: {}, periodId: {}, total entries: {}, updated entries: {}",
+                communityId, period.getId(), entries.size(), changedEntries.size());
 
         eventPublisher.publishEvent(new RankingUpdatedEvent(
                 communityId,

@@ -48,7 +48,10 @@ class RateLimitingFilterIntegrationTest {
 
         // The 21st request from this IP must be blocked with 429
         mockMvc.perform(post("/api/v1/auth/login")
-                        .header("X-Forwarded-For", testIp)
+                        .with(request -> {
+                            request.setRemoteAddr(testIp);
+                            return request;
+                        })
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(content))
                 .andExpect(status().isTooManyRequests())

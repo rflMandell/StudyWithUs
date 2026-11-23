@@ -8,10 +8,14 @@ import com.studywithus.moderation.application.DismissReportUseCase;
 import com.studywithus.moderation.application.GetReportUseCase;
 import com.studywithus.moderation.application.ListReportsQuery;
 import com.studywithus.moderation.application.ListReportsUseCase;
+import com.studywithus.moderation.application.ModerationAuthorizationService;
+import com.studywithus.moderation.application.ReportResult;
 import com.studywithus.moderation.application.ResolveReportCommand;
 import com.studywithus.moderation.application.ResolveReportUseCase;
 import com.studywithus.moderation.domain.ReportStatus;
 import com.studywithus.moderation.domain.ReportTargetType;
+import com.studywithus.shared.domain.DomainException;
+import com.studywithus.shared.domain.PagedResult;
 import com.studywithus.shared.presentation.PagedResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,7 @@ public class ReportController {
     private final GetReportUseCase getReportUseCase;
     private final ResolveReportUseCase resolveReportUseCase;
     private final DismissReportUseCase dismissReportUseCase;
+    private final ModerationAuthorizationService moderationAuthorizationService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -59,19 +64,50 @@ public class ReportController {
 
     @GetMapping
     public ResponseEntity<PagedResponse<ReportResponse>> listReports(
+            @AuthenticationPrincipal SecurityUserPrincipal principal,
+            @RequestParam(required = false) UUID communityId,
             @RequestParam(required = false) ReportStatus status,
             @RequestParam(required = false) ReportTargetType targetType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        if (principal == null) {
+            throw new DomainException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Autenticação obrigatória");
+        }
+        boolean isAdmin = moderationAuthorizationService.isPlatformAdmin();
+        if (!isAdmin) {
+            if (communityId != null) {
+                moderationAuthorizationService.assertCommunityModerator(communityId, principal.getId());
+            } else if (!moderationAuthorizationService.isModeratorOfAnyCommunity(principal.getId())) {
+                throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Apenas moderadores podem listar denúncias");
+            }
+        }
+
         var query = new ListReportsQuery(status, targetType, page, size);
         var pagedResult = listReportsUseCase.execute(query);
+        if (!isAdmin || communityId != null) {
+            var filtered = pagedResult.content().stream()
+                    .filter(r -> isAdmin || moderationAuthorizationService.canViewReport(r, principal.getId()))
+                    .filter(r -> communityId == null || communityId.equals(
+                            moderationAuthorizationService.resolveCommunityId(r.targetType(), r.targetId())))
+                    .toList();
+            pagedResult = PagedResult.of(filtered, pagedResult.page(), pagedResult.size(), filtered.size());
+        }
         return ResponseEntity.ok(PagedResponse.from(pagedResult, ReportResponse::from));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ReportResponse> getReport(@PathVariable UUID id) {
-        var result = getReportUseCase.execute(id);
+    public ResponseEntity<ReportResponse> getReport(
+            @AuthenticationPrincipal SecurityUserPrincipal principal,
+            @PathVariable UUID id
+    ) {
+        if (principal == null) {
+            throw new DomainException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Autenticação obrigatória");
+        }
+        ReportResult result = getReportUseCase.execute(id);
+        if (!moderationAuthorizationService.canViewReport(result, principal.getId())) {
+            throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Você não tem permissão para visualizar esta denúncia");
+        }
         return ResponseEntity.ok(ReportResponse.from(result));
     }
 

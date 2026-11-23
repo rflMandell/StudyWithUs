@@ -48,16 +48,21 @@ public class ReviewJoinRequestUseCase implements UseCase<ReviewJoinRequestComman
             throw new DomainException(HttpStatus.BAD_REQUEST, "JOIN_REQUEST_MISMATCH", "Join request does not belong to this community");
         }
 
+        communityRepository.findById(command.communityId())
+                .filter(Community::isActive)
+                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
+
         if (command.approved()) {
-            request.approve(command.reviewerUserId());
-
-            communityRepository.findById(command.communityId())
-                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
-
             Optional<CommunityMember> existingMemberOpt = communityMemberRepository.findByCommunityIdAndUserId(
                     command.communityId(),
                     request.getUserId()
             );
+
+            if (existingMemberOpt.isPresent() && existingMemberOpt.get().getStatus() == MemberStatus.BANNED) {
+                throw new DomainException(HttpStatus.FORBIDDEN, "COMMUNITY_MEMBER_BANNED", "Banned users cannot be approved to join this community");
+            }
+
+            request.approve(command.reviewerUserId());
 
             CommunityMember memberToSave;
             if (existingMemberOpt.isPresent()) {

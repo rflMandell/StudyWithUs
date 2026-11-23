@@ -104,7 +104,7 @@ class GetUserFeedUseCaseTest {
                 .build();
 
         // Limit is 1, so repository is requested with limit + 1 = 2 items
-        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), eq(2)))
+        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(2)))
                 .thenReturn(List.of(c1, c2));
 
         User author = User.builder()
@@ -132,6 +132,37 @@ class GetUserFeedUseCaseTest {
         assertThat(result.items().get(0).communityName()).isEqualTo("Test Community");
         assertThat(result.hasMore()).isTrue();
         assertThat(result.nextCursor()).isNotNull();
-        assertThat(FeedCursorHelper.decode(result.nextCursor())).isEqualTo(c1.getCreatedAt());
+        FeedCursorHelper.FeedCursor decodedCursor = FeedCursorHelper.decodeCursor(result.nextCursor());
+        assertThat(decodedCursor.createdAt()).isEqualTo(c1.getCreatedAt());
+        assertThat(decodedCursor.id()).isEqualTo(c1.getId());
+    }
+
+    @Test
+    void shouldReturnNullNextCursorWhenHasMoreIsFalse() {
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+
+        when(communityMemberRepository.findActiveCommunityIdsByUserId(userId)).thenReturn(List.of(communityId));
+        when(followRepository.findFollowingIdsByFollowerId(userId)).thenReturn(Collections.emptyList());
+
+        Instant now = Instant.now();
+        Checkin c1 = Checkin.builder()
+                .id(UUID.randomUUID())
+                .userId(authorId)
+                .communityId(communityId)
+                .caption("Only Checkin")
+                .createdAt(now.minusSeconds(10))
+                .updatedAt(now.minusSeconds(10))
+                .build();
+
+        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(6)))
+                .thenReturn(List.of(c1));
+
+        FeedCursorResult result = useCase.execute(new GetUserFeedQuery(userId, null, 5));
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.hasMore()).isFalse();
+        assertThat(result.nextCursor()).isNull();
     }
 }

@@ -12,6 +12,7 @@ public interface ChallengeRepository {
     List<Challenge> findActiveChallengesByCommunityId(UUID communityId, Instant now);
 
     ChallengeParticipant saveParticipant(ChallengeParticipant participant);
+    boolean markCompletedIfNotCompleted(UUID challengeId, UUID userId, Instant completedAt);
     Optional<ChallengeParticipant> findParticipant(UUID challengeId, UUID userId);
     List<ChallengeParticipant> findActiveParticipationsByUserAndCommunity(UUID userId, UUID communityId, Instant now);
     List<ChallengeParticipant> findParticipantsByChallengeId(UUID challengeId);

@@ -2,6 +2,7 @@ package com.studywithus.media.presentation;
 
 import com.studywithus.media.domain.MediaAsset;
 import com.studywithus.media.domain.MediaAssetRepository;
+import com.studywithus.media.domain.MediaStatus;
 import com.studywithus.media.infrastructure.LocalObjectStorageAdapter;
 import com.studywithus.shared.domain.DomainException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,13 +36,25 @@ public class LocalMediaStorageController {
     public ResponseEntity<Void> uploadToPresignedUrl(
             HttpServletRequest request,
             @RequestParam("expires") long expires,
+            @RequestParam(value = "contentLength", required = false) Long contentLength,
             @RequestParam("signature") String signature,
             @RequestHeader(value = "Content-Type", required = false) String contentType,
             @RequestBody byte[] body
     ) {
         String storageKey = extractKey(request, "/api/v1/media/storage/");
-        if (!storageAdapter.verifySignature(storageKey, contentType, expires, signature)) {
+        if (!storageAdapter.verifySignature(storageKey, contentType, contentLength, expires, signature)) {
             throw new DomainException(HttpStatus.FORBIDDEN, "INVALID_UPLOAD_SIGNATURE", "Presigned URL is invalid or expired");
+        }
+        if (body.length > storageAdapter.getMaxFileSizeBytes()) {
+            throw new DomainException(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "File exceeds maximum allowed size");
+        }
+        if (body.length != contentLength) {
+            throw new DomainException(HttpStatus.BAD_REQUEST, "INVALID_CONTENT_LENGTH", "Uploaded body size does not match signed content length");
+        }
+        MediaAsset asset = mediaAssetRepository.findByStorageKey(storageKey)
+                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "MEDIA_NOT_FOUND", "Media asset not found"));
+        if (asset.getStatus() != MediaStatus.PENDING) {
+            throw new DomainException(HttpStatus.CONFLICT, "MEDIA_ALREADY_UPLOADED", "Media upload is no longer pending");
         }
         storageAdapter.upload(storageKey, body, contentType);
         return ResponseEntity.ok().build();

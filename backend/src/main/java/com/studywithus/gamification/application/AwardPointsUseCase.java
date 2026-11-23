@@ -39,8 +39,7 @@ public class AwardPointsUseCase implements UseCase<AwardPointsCommand, PointTran
         PointTransaction saved = pointTransactionRepository.save(transaction);
 
         if (command.amount() > 0) {
-            user.setLifetimePoints(user.getLifetimePoints() + command.amount());
-            userRepository.save(user);
+            pointTransactionRepository.adjustUserLifetimePoints(user.getId(), command.amount());
         }
 
         eventPublisher.publishEvent(new PointsAwardedEvent(

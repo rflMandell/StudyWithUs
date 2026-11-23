@@ -38,7 +38,9 @@ public class GetUserFeedUseCase {
     @Transactional(readOnly = true)
     public FeedCursorResult execute(GetUserFeedQuery query) {
         int limit = query.limit() > 0 ? Math.min(query.limit(), 50) : 20;
-        Instant cursorInstant = FeedCursorHelper.decode(query.cursor());
+        FeedCursorHelper.FeedCursor decodedCursor = FeedCursorHelper.decodeCursor(query.cursor());
+        Instant cursorInstant = decodedCursor != null ? decodedCursor.createdAt() : null;
+        UUID cursorId = decodedCursor != null ? decodedCursor.id() : null;
 
         List<UUID> activeCommunityIds = communityMemberRepository.findActiveCommunityIdsByUserId(query.userId());
         List<UUID> followingIds = followRepository.findFollowingIdsByFollowerId(query.userId());
@@ -51,6 +53,7 @@ public class GetUserFeedUseCase {
                 activeCommunityIds,
                 followingIds,
                 cursorInstant,
+                cursorId,
                 limit + 1
         );
 
@@ -58,9 +61,9 @@ public class GetUserFeedUseCase {
         List<Checkin> itemsToReturn = hasMore ? checkins.subList(0, limit) : checkins;
 
         String nextCursor = null;
-        if (!itemsToReturn.isEmpty()) {
-            Instant lastItemCreatedAt = itemsToReturn.get(itemsToReturn.size() - 1).getCreatedAt();
-            nextCursor = FeedCursorHelper.encode(lastItemCreatedAt);
+        if (hasMore && !itemsToReturn.isEmpty()) {
+            Checkin lastItem = itemsToReturn.get(itemsToReturn.size() - 1);
+            nextCursor = FeedCursorHelper.encode(lastItem.getCreatedAt(), lastItem.getId());
         }
 
         Set<UUID> userIds = itemsToReturn.stream()

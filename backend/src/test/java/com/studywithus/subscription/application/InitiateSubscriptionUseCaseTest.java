@@ -7,6 +7,7 @@ import com.studywithus.subscription.domain.CheckoutSession;
 import com.studywithus.subscription.domain.PaymentProviderPort;
 import com.studywithus.subscription.domain.Subscription;
 import com.studywithus.subscription.domain.SubscriptionCreatedEvent;
+import com.studywithus.subscription.domain.SubscriptionEventRepository;
 import com.studywithus.subscription.domain.SubscriptionPlan;
 import com.studywithus.subscription.domain.SubscriptionRepository;
 import com.studywithus.subscription.domain.SubscriptionStatus;
@@ -35,6 +36,9 @@ class InitiateSubscriptionUseCaseTest {
 
     @Mock
     private SubscriptionRepository subscriptionRepository;
+
+    @Mock
+    private SubscriptionEventRepository subscriptionEventRepository;
 
     @Mock
     private UserRepository userRepository;

@@ -9,10 +9,12 @@ import com.studywithus.subscription.domain.SubscriptionActivatedEvent;
 import com.studywithus.subscription.domain.SubscriptionCanceledEvent;
 import com.studywithus.subscription.domain.SubscriptionEvent;
 import com.studywithus.subscription.domain.SubscriptionEventRepository;
+import com.studywithus.subscription.domain.SubscriptionPlan;
 import com.studywithus.subscription.domain.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,18 +75,27 @@ public class ProcessWebhookUseCase {
                 eventType,
                 command.rawPayload()
         );
-        subscriptionEventRepository.save(event);
+        try {
+            subscriptionEventRepository.save(event);
+        } catch (DataIntegrityViolationException ex) {
+            log.info("Duplicate webhook event ignored (concurrent): {}", providerEventId);
+            return;
+        }
 
         if (subscription != null) {
-            applyEventToSubscription(subscription, eventType);
+            SubscriptionPlan targetPlan = resolveTargetPlan(root, externalId);
+            applyEventToSubscription(subscription, eventType, targetPlan);
         } else {
             log.warn("Webhook event {} received but no associated subscription found (externalId={})", eventType, externalId);
         }
     }
 
-    private void applyEventToSubscription(Subscription subscription, String eventType) {
+    private void applyEventToSubscription(Subscription subscription, String eventType, SubscriptionPlan targetPlan) {
         switch (eventType) {
             case "checkout.session.completed", "payment.succeeded", "subscription.activated", "invoice.paid" -> {
+                if (targetPlan != null) {
+                    subscription.setPlan(targetPlan);
+                }
                 subscription.activate(Instant.now().plus(30, ChronoUnit.DAYS));
                 subscriptionRepository.save(subscription);
                 eventPublisher.publishEvent(new SubscriptionActivatedEvent(
@@ -108,6 +119,33 @@ public class ProcessWebhookUseCase {
             }
             default -> log.debug("Unhandled subscription webhook event type: {}", eventType);
         }
+    }
+
+    private SubscriptionPlan resolveTargetPlan(JsonNode root, String externalId) {
+        String planStr = extractField(root, "plan");
+        if (planStr == null && root.has("data") && root.get("data").has("object")) {
+            planStr = extractField(root.get("data").get("object"), "plan");
+        }
+        if (planStr != null) {
+            try {
+                return SubscriptionPlan.valueOf(planStr.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        if (externalId != null && !externalId.isBlank()) {
+            return subscriptionEventRepository.findByProviderEventId("checkout:" + externalId)
+                    .map(evt -> {
+                        try {
+                            JsonNode evtRoot = objectMapper.readTree(evt.getPayload());
+                            String pendingPlan = extractField(evtRoot, "plan");
+                            return pendingPlan != null ? SubscriptionPlan.valueOf(pendingPlan.trim().toUpperCase()) : null;
+                        } catch (Exception ignored) {
+                            return null;
+                        }
+                    })
+                    .orElse(null);
+        }
+        return null;
     }
 
     private Subscription resolveSubscription(JsonNode root, String externalId) {

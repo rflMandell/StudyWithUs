@@ -14,7 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +36,18 @@ public class ListCommunityMembersUseCase {
 
         PagedResult<CommunityMember> pagedMembers = communityMemberRepository.findActiveMembers(communityId, page, size);
 
+        Set<UUID> userIds = pagedMembers.content().stream()
+                .map(CommunityMember::getUserId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, User> usersById = userIds.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
         List<CommunityMemberResult> results = pagedMembers.content().stream()
                 .map(member -> {
-                    User user = userRepository.findById(member.getUserId()).orElse(null);
+                    User user = usersById.get(member.getUserId());
                     String username = user != null ? user.getUsername() : "unknown";
                     String name = user != null ? user.getName() : "Unknown";
                     String avatarUrl = user != null ? user.getAvatarUrl() : null;

@@ -66,8 +66,7 @@ class AwardPointsUseCaseTest {
 
         assertThat(result.amount()).isEqualTo(10);
         assertThat(result.type()).isEqualTo(PointTransactionType.CHECKIN);
-        assertThat(user.getLifetimePoints()).isEqualTo(60);
-        verify(userRepository).save(user);
+        verify(pointTransactionRepository).adjustUserLifetimePoints(userId, 10);
         verify(pointTransactionRepository).save(any(PointTransaction.class));
         verify(eventPublisher).publishEvent(any(PointsAwardedEvent.class));
     }

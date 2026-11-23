@@ -5,6 +5,7 @@ import com.studywithus.challenge.domain.ChallengeCreatedEvent;
 import com.studywithus.challenge.domain.ChallengeRepository;
 import com.studywithus.challenge.domain.ChallengeReward;
 import com.studywithus.challenge.domain.ChallengeStatus;
+import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
@@ -55,16 +56,19 @@ public class CreateChallengeUseCase implements UseCase<CreateChallengeCommand, C
             throw new DomainException(HttpStatus.BAD_REQUEST, "INVALID_DATE_RANGE", "A data final deve ser posterior à data inicial");
         }
 
-        if (command.communityId() != null) {
-            communityRepository.findById(command.communityId())
-                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
+        if (command.communityId() == null) {
+            throw new DomainException(HttpStatus.FORBIDDEN, "GLOBAL_CHALLENGE_FORBIDDEN", "Apenas administradores da plataforma podem criar desafios globais");
+        }
 
-            CommunityMember member = communityMemberRepository.findByCommunityIdAndUserId(command.communityId(), command.creatorId())
-                    .orElseThrow(() -> new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Usuário não é membro da comunidade"));
+        communityRepository.findById(command.communityId())
+                .filter(Community::isActive)
+                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
 
-            if (!member.isAdmin()) {
-                throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Apenas administradores ou proprietários da comunidade podem criar desafios");
-            }
+        CommunityMember member = communityMemberRepository.findByCommunityIdAndUserId(command.communityId(), command.creatorId())
+                .orElseThrow(() -> new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Usuário não é membro da comunidade"));
+
+        if (!member.isAdmin()) {
+            throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Apenas administradores ou proprietários da comunidade podem criar desafios");
         }
 
         UUID challengeId = UUID.randomUUID();

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,19 +25,21 @@ public class ListCommunitiesUseCase {
     @Transactional(readOnly = true)
     public PagedResult<CommunityResult> execute(String search, int page, int size, UUID currentUserId) {
         PagedResult<Community> pagedCommunities = communityRepository.findPublicCommunities(search, page, size);
+        List<Community> communities = pagedCommunities.content();
 
-        List<CommunityResult> results = pagedCommunities.content().stream()
-                .map(community -> {
-                    long count = communityMemberRepository.countActiveMembers(community.getId());
-                    CommunityRole userRole = null;
-                    if (currentUserId != null) {
-                        userRole = communityMemberRepository.findByCommunityIdAndUserId(community.getId(), currentUserId)
-                                .filter(CommunityMember::isActive)
-                                .map(CommunityMember::getRole)
-                                .orElse(null);
-                    }
-                    return CommunityResult.from(community, count, userRole);
-                })
+        List<UUID> communityIds = communities.stream().map(Community::getId).toList();
+        Map<UUID, Long> memberCounts = communityMemberRepository.countActiveMembersByCommunityIds(communityIds);
+        Map<UUID, CommunityRole> userRoles = currentUserId == null || communityIds.isEmpty()
+                ? Map.of()
+                : communityMemberRepository.findActiveByCommunityIdsAndUserId(communityIds, currentUserId).stream()
+                        .collect(Collectors.toMap(CommunityMember::getCommunityId, CommunityMember::getRole));
+
+        List<CommunityResult> results = communities.stream()
+                .map(community -> CommunityResult.from(
+                        community,
+                        memberCounts.getOrDefault(community.getId(), 0L),
+                        userRoles.get(community.getId())
+                ))
                 .toList();
 
         return new PagedResult<>(

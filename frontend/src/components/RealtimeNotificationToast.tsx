@@ -7,17 +7,23 @@ export const RealtimeNotificationToast: React.FC = () => {
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
 
   useEffect(() => {
+    const timeouts = new Set<ReturnType<typeof setTimeout>>();
+
     const unsubscribe = realtimeService.subscribe((notification) => {
       setNotifications((prev) => [notification, ...prev.slice(0, 4)]);
 
       // Auto-dismiss after 6 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        timeouts.delete(timeoutId);
         setNotifications((current) => current.filter((n) => n.id !== notification.id));
       }, 6000);
+      timeouts.add(timeoutId);
     });
 
     return () => {
       unsubscribe();
+      timeouts.forEach((id) => clearTimeout(id));
+      timeouts.clear();
     };
   }, []);
 

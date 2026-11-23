@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -19,15 +20,22 @@ public class RankingPeriodManager {
 
     @Transactional
     public RankingPeriod getOrCreateActivePeriod(UUID communityId, String timezone) {
-        return periodRepository.findActiveByCommunityId(communityId)
-                .orElseGet(() -> {
-                    RankingConfiguration config = configurationRepository.findByCommunityId(communityId)
-                            .orElseGet(() -> configurationRepository.save(
-                                    RankingConfiguration.createDefault(communityId, timezone)
-                            ));
+        Optional<RankingPeriod> activeOpt = periodRepository.findActiveByCommunityId(communityId);
+        if (activeOpt.isPresent()) {
+            RankingPeriod active = activeOpt.get();
+            if (!active.isExpired()) {
+                return active;
+            }
+            active.close();
+            periodRepository.save(active);
+        }
 
-                    RankingPeriod newPeriod = RankingPeriod.createCurrentWeekly(communityId, config.getId());
-                    return periodRepository.save(newPeriod);
-                });
+        RankingConfiguration config = configurationRepository.findByCommunityId(communityId)
+                .orElseGet(() -> configurationRepository.save(
+                        RankingConfiguration.createDefault(communityId, timezone)
+                ));
+
+        RankingPeriod newPeriod = RankingPeriod.createCurrentWeekly(communityId, config.getId());
+        return periodRepository.save(newPeriod);
     }
 }

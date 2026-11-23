@@ -52,10 +52,12 @@ public class CommentController {
     public ResponseEntity<PagedResponse<CommentResponse>> listComments(
             @PathVariable UUID checkinId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
     ) {
+        UUID callerId = principal != null ? principal.getId() : null;
         PagedResult<CommentResult> pagedResult = listCommentsUseCase.execute(
-                new ListCommentsQuery(checkinId, page, size)
+                new ListCommentsQuery(checkinId, callerId, page, size)
         );
         return ResponseEntity.ok(PagedResponse.from(pagedResult, CommentResponse::from));
     }

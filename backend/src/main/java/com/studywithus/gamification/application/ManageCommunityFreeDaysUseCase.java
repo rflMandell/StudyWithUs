@@ -4,7 +4,6 @@ import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
-import com.studywithus.community.domain.CommunityRole;
 import com.studywithus.gamification.domain.CommunityFreeDay;
 import com.studywithus.gamification.domain.CommunityFreeDayRepository;
 import com.studywithus.shared.domain.DomainException;
@@ -53,13 +52,14 @@ public class ManageCommunityFreeDaysUseCase {
 
     private void validateAdminPermission(UUID communityId, UUID requesterId) {
         Community community = communityRepository.findById(communityId)
+                .filter(Community::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
 
         if (!community.getOwnerId().equals(requesterId)) {
             CommunityMember member = memberRepository.findByCommunityIdAndUserId(communityId, requesterId)
                     .orElseThrow(() -> new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Requester is not a member of this community"));
 
-            if (member.getRole() != CommunityRole.OWNER && member.getRole() != CommunityRole.ADMIN) {
+            if (!member.isAdmin()) {
                 throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Only community owner or admin can configure free days");
             }
         }

@@ -19,7 +19,7 @@ class RealtimeService {
   public connect(): void {
     if (this.eventSource || this.isConnecting) return;
 
-    const token = localStorage.getItem('studywithus_access_token');
+    const token = localStorage.getItem('access_token');
     if (!token) return;
 
     this.isConnecting = true;
@@ -64,6 +64,10 @@ class RealtimeService {
   }
 
   public disconnect(): void {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;

@@ -48,8 +48,12 @@ public class CheckinController {
     }
 
     @GetMapping("/checkins/{checkinId}")
-    public ResponseEntity<CheckinResponse> getCheckinDetails(@PathVariable UUID checkinId) {
-        CheckinResult result = getCheckinDetailsUseCase.execute(checkinId);
+    public ResponseEntity<CheckinResponse> getCheckinDetails(
+            @PathVariable UUID checkinId,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
+        UUID callerId = principal != null ? principal.getId() : null;
+        CheckinResult result = getCheckinDetailsUseCase.execute(checkinId, callerId);
         return ResponseEntity.ok(CheckinResponse.from(result));
     }
 
@@ -57,9 +61,13 @@ public class CheckinController {
     public ResponseEntity<PagedResponse<CheckinResponse>> listCommunityCheckins(
             @PathVariable UUID communityId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
     ) {
-        PagedResult<CheckinResult> pagedResult = listCommunityCheckinsUseCase.execute(communityId, page, size);
+        UUID callerId = principal != null ? principal.getId() : null;
+        int boundedPage = Math.max(page, 0);
+        int boundedSize = Math.min(Math.max(size, 1), 100);
+        PagedResult<CheckinResult> pagedResult = listCommunityCheckinsUseCase.execute(communityId, boundedPage, boundedSize, callerId);
         return ResponseEntity.ok(PagedResponse.from(pagedResult, CheckinResponse::from));
     }
 

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -24,7 +25,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.HexFormat;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +49,9 @@ class SubscriptionIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Value("${subscription.webhook.secret}")
+    private String webhookSecret;
 
     private static String userToken;
     private static UUID userId;
@@ -185,8 +193,10 @@ class SubscriptionIntegrationTest {
                 }
                 """, checkoutSessionId);
 
+        String signature = computeHmacSha256(payload, webhookSecret);
+
         mockMvc.perform(post("/api/v1/webhooks/subscription")
-                        .header("X-Webhook-Signature", "test-signature")
+                        .header("X-Webhook-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -194,11 +204,17 @@ class SubscriptionIntegrationTest {
 
         // Idempotency: Send same webhook again, must return 200 OK without errors
         mockMvc.perform(post("/api/v1/webhooks/subscription")
-                        .header("X-Webhook-Signature", "test-signature")
+                        .header("X-Webhook-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.received").value(true));
+    }
+
+    private String computeHmacSha256(String payload, String secret) throws Exception {
+        Mac hmac = Mac.getInstance("HmacSHA256");
+        hmac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return HexFormat.of().formatHex(hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
     }
 
     @Test

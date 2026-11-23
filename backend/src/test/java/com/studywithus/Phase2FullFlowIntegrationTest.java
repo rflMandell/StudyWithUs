@@ -324,8 +324,12 @@ class Phase2FullFlowIntegrationTest {
                 }
                 """, checkoutSessionId);
 
+        javax.crypto.Mac hmac = javax.crypto.Mac.getInstance("HmacSHA256");
+        hmac.init(new javax.crypto.spec.SecretKeySpec("test-webhook-secret-2026".getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+        String signature = java.util.HexFormat.of().formatHex(hmac.doFinal(webhookPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
         mockMvc.perform(post("/api/v1/webhooks/subscription")
-                        .header("X-Webhook-Signature", "valid-signature")
+                        .header("X-Webhook-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(webhookPayload))
                 .andExpect(status().isOk())

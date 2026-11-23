@@ -102,6 +102,8 @@ class ReviewJoinRequestUseCaseTest {
 
         Community community = Community.builder().id(communityId).build();
 
+        when(communityRepository.findById(communityId))
+                .thenReturn(Optional.of(community));
         when(communityMemberRepository.findByCommunityIdAndUserId(communityId, adminId))
                 .thenReturn(Optional.of(admin));
         when(joinRequestRepository.findById(requestId))
@@ -146,6 +148,10 @@ class ReviewJoinRequestUseCaseTest {
                 .createdAt(Instant.now())
                 .build();
 
+        Community community = Community.builder().id(communityId).build();
+
+        when(communityRepository.findById(communityId))
+                .thenReturn(Optional.of(community));
         when(communityMemberRepository.findByCommunityIdAndUserId(communityId, adminId))
                 .thenReturn(Optional.of(admin));
         when(joinRequestRepository.findById(requestId))

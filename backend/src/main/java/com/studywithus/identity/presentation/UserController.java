@@ -53,8 +53,12 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<UserProfileResponse> getUserById(@PathVariable UUID userId) {
+    public ResponseEntity<UserProfileResponse> getUserById(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
         UserProfileResult result = getUserProfileUseCase.execute(userId);
-        return ResponseEntity.ok(UserProfileResponse.from(result));
+        boolean isSelf = principal != null && principal.getId().equals(userId);
+        return ResponseEntity.ok(isSelf ? UserProfileResponse.from(result) : UserProfileResponse.fromPublic(result));
     }
 }

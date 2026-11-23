@@ -120,6 +120,7 @@ class ChallengeProgressTrackerTest {
         when(challengeRepository.findActiveParticipationsByUserAndCommunity(any(), any(), any()))
                 .thenReturn(List.of(participant));
         when(challengeRepository.findById(challengeId)).thenReturn(Optional.of(challenge));
+        when(challengeRepository.markCompletedIfNotCompleted(any(), any(), any())).thenReturn(true);
 
         tracker.onCheckinCreated(new CheckinCreatedEvent(checkinId, userId, communityId));
 

@@ -22,7 +22,7 @@ public class GetUserCommunityRankingPositionUseCase {
     private final RankingPeriodManager periodManager;
     private final RankingEntryRepository rankingEntryRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public UserRankingPositionResult execute(UUID communityId, UUID userId) {
         Community community = communityRepository.findById(communityId)
                 .filter(Community::isActive)

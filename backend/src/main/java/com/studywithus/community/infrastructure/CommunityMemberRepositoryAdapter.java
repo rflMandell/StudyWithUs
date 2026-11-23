@@ -9,6 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,5 +66,28 @@ public class CommunityMemberRepositoryAdapter implements CommunityMemberReposito
     @Override
     public java.util.List<UUID> findActiveCommunityIdsByUserId(UUID userId) {
         return springDataCommunityMemberRepository.findActiveCommunityIdsByUserId(userId);
+    }
+
+    @Override
+    public Map<UUID, Long> countActiveMembersByCommunityIds(Collection<UUID> communityIds) {
+        if (communityIds == null || communityIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, Long> counts = new HashMap<>();
+        for (Object[] row : springDataCommunityMemberRepository.countActiveMembersByCommunityIds(communityIds)) {
+            counts.put((UUID) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
+    @Override
+    public List<CommunityMember> findActiveByCommunityIdsAndUserId(Collection<UUID> communityIds, UUID userId) {
+        if (communityIds == null || communityIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataCommunityMemberRepository.findActiveByCommunityIdsAndUserId(communityIds, userId)
+                .stream()
+                .map(CommunityMemberJpaEntity::toDomain)
+                .toList();
     }
 }

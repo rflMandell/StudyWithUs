@@ -31,7 +31,7 @@ public class GetCommunityRankingUseCase {
     private final RankingEntryRepository rankingEntryRepository;
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PagedResult<RankingEntryResult> execute(UUID communityId, int page, int size) {
         Community community = communityRepository.findById(communityId)
                 .filter(Community::isActive)

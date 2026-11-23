@@ -19,7 +19,7 @@ public class HmacPaymentProviderAdapter implements PaymentProviderPort {
     private final String webhookSecret;
 
     public HmacPaymentProviderAdapter(
-            @Value("${subscription.webhook.secret:studywithus-default-webhook-secret-2026}") String webhookSecret
+            @Value("${subscription.webhook.secret}") String webhookSecret
     ) {
         this.webhookSecret = webhookSecret;
     }
@@ -35,11 +35,6 @@ public class HmacPaymentProviderAdapter implements PaymentProviderPort {
     public boolean verifyWebhookSignature(String payload, String signatureHeader) {
         if (signatureHeader == null || signatureHeader.isBlank()) {
             return false;
-        }
-
-        // Allow test signature in integration/mock tests
-        if ("test-signature".equals(signatureHeader) || "valid-signature".equals(signatureHeader)) {
-            return true;
         }
 
         try {

@@ -11,6 +11,15 @@ vi.mock('../services/feedService', () => ({
   },
 }));
 
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', username: 'test_user', name: 'Test User' },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 const mockFeedItems: FeedItem[] = [
   {
     id: 'item-1',

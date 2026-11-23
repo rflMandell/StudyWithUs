@@ -1,14 +1,12 @@
 package com.studywithus.moderation.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studywithus.checkin.domain.Checkin;
 import com.studywithus.checkin.domain.CheckinRepository;
-import com.studywithus.community.domain.CommunityMember;
-import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.media.domain.MediaAsset;
 import com.studywithus.media.domain.MediaAssetRepository;
-import com.studywithus.media.domain.MediaPurpose;
 import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.moderation.domain.AuditLog;
 import com.studywithus.moderation.domain.AuditLogRepository;
@@ -17,6 +15,7 @@ import com.studywithus.moderation.domain.Report;
 import com.studywithus.moderation.domain.ReportRepository;
 import com.studywithus.moderation.domain.ReportResolvedEvent;
 import com.studywithus.moderation.domain.ReportStatus;
+import com.studywithus.moderation.domain.ReportTargetType;
 import com.studywithus.notification.application.CreateInAppNotificationUseCase;
 import com.studywithus.notification.application.CreateNotificationCommand;
 import com.studywithus.notification.domain.NotificationType;
@@ -31,7 +30,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -44,10 +44,11 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
     private final CheckinRepository checkinRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
-    private final CommunityMemberRepository communityMemberRepository;
     private final MediaAssetRepository mediaAssetRepository;
     private final ObjectStoragePort objectStoragePort;
     private final CreateInAppNotificationUseCase createInAppNotificationUseCase;
+    private final ModerationAuthorizationService moderationAuthorizationService;
+    private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -64,9 +65,9 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
             throw new DomainException(HttpStatus.BAD_REQUEST, "REPORT_ALREADY_REVIEWED", "Esta denúncia já foi avaliada anteriormente");
         }
 
-        validateModeratorPermission(report, command.reviewerId());
+        moderationAuthorizationService.assertCanModerateTarget(report.getTargetType(), report.getTargetId(), command.reviewerId());
 
-        String snapshot = applyModerationAction(report, command);
+        Map<String, Object> snapshot = applyModerationAction(report, command);
 
         report.resolve(command.reviewerId());
         Report savedReport = reportRepository.save(report);
@@ -96,69 +97,33 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
         return ReportResult.fromDomain(savedReport);
     }
 
-    private void validateModeratorPermission(Report report, UUID reviewerId) {
-        switch (report.getTargetType()) {
-            case COMMENT -> {
-                Comment comment = commentRepository.findById(report.getTargetId())
-                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND", "Comentário não encontrado"));
-                Checkin checkin = checkinRepository.findById(comment.getCheckinId())
-                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
-                assertCommunityModerator(checkin.getCommunityId(), reviewerId);
-            }
-            case CHECKIN -> {
-                Checkin checkin = checkinRepository.findById(report.getTargetId())
-                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
-                assertCommunityModerator(checkin.getCommunityId(), reviewerId);
-            }
-            case COMMUNITY -> {
-                assertCommunityModerator(report.getTargetId(), reviewerId);
-            }
-            case USER -> {
-                // Any active user with administrative context can moderate users
-            }
-            case MEDIA -> {
-                MediaAsset asset = mediaAssetRepository.findById(report.getTargetId())
-                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "MEDIA_NOT_FOUND", "Mídia não encontrada"));
-                if (asset.getPurpose() == MediaPurpose.COMMUNITY_COVER && asset.getTargetId() != null) {
-                    assertCommunityModerator(asset.getTargetId(), reviewerId);
-                }
-            }
-        }
-    }
-
-    private void assertCommunityModerator(UUID communityId, UUID reviewerId) {
-        CommunityMember member = communityMemberRepository.findByCommunityIdAndUserId(communityId, reviewerId)
-                .orElseThrow(() -> new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Você não é membro desta comunidade"));
-
-        if (!member.isModeratorOrHigher()) {
-            throw new DomainException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Apenas moderadores e administradores da comunidade podem avaliar denúncias");
-        }
-    }
-
-    private String applyModerationAction(Report report, ResolveReportCommand command) {
-        String snapshot = "{}";
+    private Map<String, Object> applyModerationAction(Report report, ResolveReportCommand command) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
         switch (command.action()) {
             case REMOVE_CONTENT -> {
-                if (report.getTargetType() == com.studywithus.moderation.domain.ReportTargetType.COMMENT) {
+                if (report.getTargetType() == ReportTargetType.COMMENT) {
                     Comment comment = commentRepository.findById(report.getTargetId()).orElse(null);
                     if (comment != null) {
-                        snapshot = "{\"content\":\"" + escapeJson(comment.getContent()) + "\",\"authorId\":\"" + comment.getAuthorId() + "\"}";
+                        snapshot.put("content", comment.getContent());
+                        snapshot.put("authorId", comment.getAuthorId().toString());
                         comment.removeByModerator();
                         commentRepository.save(comment);
                         log.info("Comment {} removed by moderator {}", comment.getId(), command.reviewerId());
                     }
-                } else if (report.getTargetType() == com.studywithus.moderation.domain.ReportTargetType.CHECKIN) {
+                } else if (report.getTargetType() == ReportTargetType.CHECKIN) {
                     Checkin checkin = checkinRepository.findById(report.getTargetId()).orElse(null);
                     if (checkin != null) {
-                        snapshot = "{\"caption\":\"" + escapeJson(checkin.getCaption()) + "\",\"userId\":\"" + checkin.getUserId() + "\"}";
+                        snapshot.put("caption", checkin.getCaption());
+                        snapshot.put("userId", checkin.getUserId().toString());
                         checkin.delete();
                         checkinRepository.save(checkin);
                         log.info("Check-in {} removed by moderator {}", checkin.getId(), command.reviewerId());
                     }
-                } else if (report.getTargetType() == com.studywithus.moderation.domain.ReportTargetType.MEDIA) {
+                } else if (report.getTargetType() == ReportTargetType.MEDIA) {
                     MediaAsset asset = mediaAssetRepository.findById(report.getTargetId()).orElse(null);
                     if (asset != null) {
-                        snapshot = "{\"storageKey\":\"" + escapeJson(asset.getStorageKey()) + "\",\"ownerId\":\"" + asset.getOwnerId() + "\"}";
+                        snapshot.put("storageKey", asset.getStorageKey());
+                        snapshot.put("ownerId", asset.getOwnerId().toString());
                         asset.reject("Removed by moderator: " + report.getReason());
                         mediaAssetRepository.save(asset);
                         try {
@@ -187,6 +152,16 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
                 }
             }
             case SUSPEND_USER -> {
+                if ((report.getTargetType() == ReportTargetType.CHECKIN
+                        || report.getTargetType() == ReportTargetType.COMMENT
+                        || report.getTargetType() == ReportTargetType.COMMUNITY)
+                        && !moderationAuthorizationService.isPlatformAdmin()) {
+                    throw new DomainException(
+                            HttpStatus.FORBIDDEN,
+                            "FORBIDDEN",
+                            "Moderadores de comunidade não podem suspender contas globalmente"
+                    );
+                }
                 UUID offendingUserId = findOffendingUserId(report);
                 if (offendingUserId != null) {
                     userRepository.findById(offendingUserId).ifPresent(u -> {
@@ -213,18 +188,16 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
         };
     }
 
-    private String buildAuditMetadata(ResolveReportCommand command, Report report, String snapshot) {
-        return "{\"action\":\"" + command.action().name() + "\","
-                + "\"notes\":\"" + escapeJson(command.notes() != null ? command.notes() : "") + "\","
-                + "\"reason\":\"" + escapeJson(report.getReason()) + "\","
-                + "\"snapshot\":" + snapshot + "}";
-    }
-
-    private String escapeJson(String raw) {
-        if (raw == null) return "";
-        return raw.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
+    private String buildAuditMetadata(ResolveReportCommand command, Report report, Map<String, Object> snapshot) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("action", command.action().name());
+        metadata.put("notes", command.notes() != null ? command.notes() : "");
+        metadata.put("reason", report.getReason());
+        metadata.put("snapshot", snapshot);
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (Exception e) {
+            return "{}";
+        }
     }
 }

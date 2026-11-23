@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ public class CheckinJpaEntity {
     @Builder.Default
     @OneToMany(mappedBy = "checkin", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("position ASC")
+    @BatchSize(size = 20)
     private List<CheckinMediaJpaEntity> media = new ArrayList<>();
 
     public static CheckinJpaEntity fromDomain(Checkin domain) {

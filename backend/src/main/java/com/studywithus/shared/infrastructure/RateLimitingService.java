@@ -17,6 +17,8 @@ public class RateLimitingService {
 
     private final StringRedisTemplate redisTemplate;
 
+    private static final int EVICTION_THRESHOLD = 1024;
+
     // In-memory fallback if Redis is unavailable or unconfigured
     private final Map<String, WindowCounter> localCounters = new ConcurrentHashMap<>();
 
@@ -50,6 +52,9 @@ public class RateLimitingService {
 
         // Local in-memory counter fallback
         Instant now = Instant.now();
+        if (localCounters.size() >= EVICTION_THRESHOLD) {
+            localCounters.entrySet().removeIf(entry -> now.isAfter(entry.getValue().expiresAt()));
+        }
         WindowCounter counter = localCounters.compute(key, (k, existing) -> {
             if (existing == null || now.isAfter(existing.expiresAt())) {
                 return new WindowCounter(new AtomicInteger(1), now.plusSeconds(windowSeconds));
