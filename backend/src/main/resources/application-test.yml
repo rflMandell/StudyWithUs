@@ -46,6 +46,8 @@ management:
       enabled: false
 
 app:
+  feed:
+    redis-enabled: false
   rate-limiting:
     enabled: false
   media:

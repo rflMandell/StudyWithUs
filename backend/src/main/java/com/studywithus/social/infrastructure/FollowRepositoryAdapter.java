@@ -26,6 +26,11 @@ public class FollowRepositoryAdapter implements FollowRepository {
     }
 
     @Override
+    public List<UUID> findFollowerIdsByFollowingId(UUID followingId) {
+        return repository.findFollowerIdsByFollowingId(followingId);
+    }
+
+    @Override
     public boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId) {
         return repository.existsById(new FollowId(followerId, followingId));
     }

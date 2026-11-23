@@ -23,4 +23,12 @@ public interface CheckinRepository {
     default List<Checkin> findFeedCheckins(Collection<UUID> communityIds, Collection<UUID> followingIds, Instant cursorTime, UUID cursorId, int limit) {
         return findFeedCheckins(communityIds, followingIds, cursorTime, limit);
     }
+
+    default List<Checkin> findAllActiveByIds(Collection<UUID> ids) {
+        return List.of();
+    }
+
+    default Optional<Checkin> findByIdIncludingDeleted(UUID id) {
+        return findById(id);
+    }
 }

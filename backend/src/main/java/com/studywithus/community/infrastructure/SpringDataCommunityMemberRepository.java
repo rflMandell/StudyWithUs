@@ -36,6 +36,9 @@ public interface SpringDataCommunityMemberRepository extends JpaRepository<Commu
     @Query("SELECT cm.id.communityId FROM CommunityMemberJpaEntity cm WHERE cm.id.userId = :userId AND cm.status = 'ACTIVE'")
     java.util.List<UUID> findActiveCommunityIdsByUserId(@Param("userId") UUID userId);
 
+    @Query("SELECT cm.id.userId FROM CommunityMemberJpaEntity cm WHERE cm.id.communityId = :communityId AND cm.status = 'ACTIVE'")
+    java.util.List<UUID> findActiveUserIdsByCommunityId(@Param("communityId") UUID communityId);
+
     @Query("SELECT cm.id.communityId, COUNT(cm) FROM CommunityMemberJpaEntity cm WHERE cm.id.communityId IN :communityIds AND cm.status = 'ACTIVE' GROUP BY cm.id.communityId")
     List<Object[]> countActiveMembersByCommunityIds(@Param("communityIds") Collection<UUID> communityIds);
 

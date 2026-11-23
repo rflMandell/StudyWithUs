@@ -6,6 +6,7 @@ import java.util.UUID;
 public interface FollowRepository {
     Follow save(Follow follow);
     List<UUID> findFollowingIdsByFollowerId(UUID followerId);
+    List<UUID> findFollowerIdsByFollowingId(UUID followingId);
     boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
     void deleteByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
 }

@@ -96,7 +96,12 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
             idempotencyService.set(cacheKey, saved.getId(), 300);
         }
 
-        eventPublisher.publishEvent(new CheckinCreatedEvent(saved.getId(), saved.getUserId(), saved.getCommunityId()));
+        eventPublisher.publishEvent(new CheckinCreatedEvent(
+                saved.getId(),
+                saved.getUserId(),
+                saved.getCommunityId(),
+                saved.getCreatedAt()
+        ));
 
         return CheckinResult.fromDomain(saved);
     }

@@ -10,7 +10,10 @@ import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.identity.domain.UserStatus;
 import com.studywithus.social.domain.CommentRepository;
+import com.studywithus.social.domain.FeedTimelinePort;
+import com.studywithus.social.domain.FeedTimelineSlice;
 import com.studywithus.social.domain.FollowRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -164,5 +167,85 @@ class GetUserFeedUseCaseTest {
         assertThat(result.items()).hasSize(1);
         assertThat(result.hasMore()).isFalse();
         assertThat(result.nextCursor()).isNull();
+    }
+
+    @Test
+    void shouldServeFeedFromRedisTimelineOnCacheHitWithoutQueryingFeedSql() {
+        FeedTimelinePort timelinePort = org.mockito.Mockito.mock(FeedTimelinePort.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        GetUserFeedUseCase cachedUseCase = new GetUserFeedUseCase(
+                communityMemberRepository,
+                followRepository,
+                checkinRepository,
+                new FeedItemHydrator(userRepository, communityRepository, commentRepository),
+                timelinePort,
+                meterRegistry
+        );
+
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        UUID checkinId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        when(timelinePort.getUserTimeline(userId, null, null, 21))
+                .thenReturn(FeedTimelineSlice.hit(List.of(checkinId)));
+
+        Checkin checkin = Checkin.builder()
+                .id(checkinId)
+                .userId(authorId)
+                .communityId(communityId)
+                .caption("Cached checkin")
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        when(checkinRepository.findAllActiveByIds(List.of(checkinId))).thenReturn(List.of(checkin));
+
+        FeedCursorResult result = cachedUseCase.execute(new GetUserFeedQuery(userId, null, 20));
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().get(0).id()).isEqualTo(checkinId);
+        assertThat(meterRegistry.counter("studywithus_feed_cache_hits_total").count()).isEqualTo(1.0);
+        org.mockito.Mockito.verifyNoInteractions(communityMemberRepository, followRepository);
+    }
+
+    @Test
+    void shouldFallbackToPostgresAndWarmRedisOnCacheMiss() {
+        FeedTimelinePort timelinePort = org.mockito.Mockito.mock(FeedTimelinePort.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        GetUserFeedUseCase cachedUseCase = new GetUserFeedUseCase(
+                communityMemberRepository,
+                followRepository,
+                checkinRepository,
+                new FeedItemHydrator(userRepository, communityRepository, commentRepository),
+                timelinePort,
+                meterRegistry
+        );
+
+        UUID userId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+        UUID checkinId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        when(timelinePort.getUserTimeline(userId, null, null, 21)).thenReturn(FeedTimelineSlice.miss());
+        when(communityMemberRepository.findActiveCommunityIdsByUserId(userId)).thenReturn(List.of(communityId));
+        when(followRepository.findFollowingIdsByFollowerId(userId)).thenReturn(Collections.emptyList());
+
+        Checkin checkin = Checkin.builder()
+                .id(checkinId)
+                .userId(UUID.randomUUID())
+                .communityId(communityId)
+                .caption("Fallback checkin")
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(21)))
+                .thenReturn(List.of(checkin));
+
+        FeedCursorResult result = cachedUseCase.execute(new GetUserFeedQuery(userId, null, 20));
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(meterRegistry.counter("studywithus_feed_cache_misses_total").count()).isEqualTo(1.0);
+        org.mockito.Mockito.verify(timelinePort).warmUserTimeline(eq(userId), any());
     }
 }

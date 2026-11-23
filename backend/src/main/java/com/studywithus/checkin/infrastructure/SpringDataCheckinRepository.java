@@ -112,4 +112,10 @@ public interface SpringDataCheckinRepository extends JpaRepository<CheckinJpaEnt
             @Param("cursorId") UUID cursorId,
             Pageable pageable
     );
+
+    @Query("SELECT c FROM CheckinJpaEntity c WHERE c.id IN :ids AND c.deletedAt IS NULL")
+    List<CheckinJpaEntity> findAllActiveByIds(@Param("ids") Collection<UUID> ids);
+
+    @Query("SELECT c FROM CheckinJpaEntity c WHERE c.id = :id")
+    Optional<CheckinJpaEntity> findByIdIncludingDeleted(@Param("id") UUID id);
 }

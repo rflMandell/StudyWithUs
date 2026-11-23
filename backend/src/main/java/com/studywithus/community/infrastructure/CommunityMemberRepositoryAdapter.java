@@ -69,6 +69,11 @@ public class CommunityMemberRepositoryAdapter implements CommunityMemberReposito
     }
 
     @Override
+    public java.util.List<UUID> findActiveUserIdsByCommunityId(UUID communityId) {
+        return springDataCommunityMemberRepository.findActiveUserIdsByCommunityId(communityId);
+    }
+
+    @Override
     public Map<UUID, Long> countActiveMembersByCommunityIds(Collection<UUID> communityIds) {
         if (communityIds == null || communityIds.isEmpty()) {
             return Map.of();

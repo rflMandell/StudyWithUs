@@ -1,39 +1,81 @@
 package com.studywithus.social.application;
 
 import com.studywithus.checkin.domain.Checkin;
-import com.studywithus.checkin.domain.CheckinMedia;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
-import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.social.domain.CommentRepository;
+import com.studywithus.social.domain.FeedTimelineEntry;
+import com.studywithus.social.domain.FeedTimelinePort;
+import com.studywithus.social.domain.FeedTimelineSlice;
 import com.studywithus.social.domain.FollowRepository;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class GetUserFeedUseCase {
 
     private final CommunityMemberRepository communityMemberRepository;
     private final FollowRepository followRepository;
     private final CheckinRepository checkinRepository;
-    private final UserRepository userRepository;
-    private final CommunityRepository communityRepository;
-    private final CommentRepository commentRepository;
+    private final FeedItemHydrator feedItemHydrator;
+    private final FeedTimelinePort feedTimelinePort;
+    private final Counter cacheHitCounter;
+    private final Counter cacheMissCounter;
+
+    @Autowired
+    public GetUserFeedUseCase(
+            CommunityMemberRepository communityMemberRepository,
+            FollowRepository followRepository,
+            CheckinRepository checkinRepository,
+            FeedItemHydrator feedItemHydrator,
+            @Autowired(required = false) FeedTimelinePort feedTimelinePort,
+            @Autowired(required = false) MeterRegistry meterRegistry
+    ) {
+        this.communityMemberRepository = communityMemberRepository;
+        this.followRepository = followRepository;
+        this.checkinRepository = checkinRepository;
+        this.feedItemHydrator = feedItemHydrator;
+        this.feedTimelinePort = feedTimelinePort;
+        this.cacheHitCounter = meterRegistry != null
+                ? Counter.builder("studywithus_feed_cache_hits_total")
+                        .description("Total number of feed queries served from Redis materialized timeline")
+                        .register(meterRegistry)
+                : null;
+        this.cacheMissCounter = meterRegistry != null
+                ? Counter.builder("studywithus_feed_cache_misses_total")
+                        .description("Total number of feed queries served from PostgreSQL")
+                        .register(meterRegistry)
+                : null;
+    }
+
+    public GetUserFeedUseCase(
+            CommunityMemberRepository communityMemberRepository,
+            FollowRepository followRepository,
+            CheckinRepository checkinRepository,
+            UserRepository userRepository,
+            CommunityRepository communityRepository,
+            CommentRepository commentRepository
+    ) {
+        this(
+                communityMemberRepository,
+                followRepository,
+                checkinRepository,
+                new FeedItemHydrator(userRepository, communityRepository, commentRepository),
+                null,
+                null
+        );
+    }
 
     @Transactional(readOnly = true)
     public FeedCursorResult execute(GetUserFeedQuery query) {
@@ -41,6 +83,21 @@ public class GetUserFeedUseCase {
         FeedCursorHelper.FeedCursor decodedCursor = FeedCursorHelper.decodeCursor(query.cursor());
         Instant cursorInstant = decodedCursor != null ? decodedCursor.createdAt() : null;
         UUID cursorId = decodedCursor != null ? decodedCursor.id() : null;
+
+        if (feedTimelinePort != null) {
+            FeedTimelineSlice slice = feedTimelinePort.getUserTimeline(query.userId(), cursorInstant, cursorId, limit + 1);
+            if (slice.cacheHit()) {
+                if (cacheHitCounter != null) {
+                    cacheHitCounter.increment();
+                }
+                List<Checkin> checkins = feedItemHydrator.hydrateInOrder(slice.checkinIds(), checkinRepository);
+                return feedItemHydrator.toCursorResult(checkins, limit);
+            }
+        }
+
+        if (cacheMissCounter != null) {
+            cacheMissCounter.increment();
+        }
 
         List<UUID> activeCommunityIds = communityMemberRepository.findActiveCommunityIdsByUserId(query.userId());
         List<UUID> followingIds = followRepository.findFollowingIdsByFollowerId(query.userId());
@@ -57,61 +114,13 @@ public class GetUserFeedUseCase {
                 limit + 1
         );
 
-        boolean hasMore = checkins.size() > limit;
-        List<Checkin> itemsToReturn = hasMore ? checkins.subList(0, limit) : checkins;
-
-        String nextCursor = null;
-        if (hasMore && !itemsToReturn.isEmpty()) {
-            Checkin lastItem = itemsToReturn.get(itemsToReturn.size() - 1);
-            nextCursor = FeedCursorHelper.encode(lastItem.getCreatedAt(), lastItem.getId());
+        if (cursorInstant == null && feedTimelinePort != null && !checkins.isEmpty()) {
+            List<FeedTimelineEntry> entries = checkins.stream()
+                    .map(c -> new FeedTimelineEntry(c.getId(), c.getCreatedAt()))
+                    .toList();
+            feedTimelinePort.warmUserTimeline(query.userId(), entries);
         }
 
-        Set<UUID> userIds = itemsToReturn.stream()
-                .map(Checkin::getUserId)
-                .collect(Collectors.toSet());
-
-        Set<UUID> communityIds = itemsToReturn.stream()
-                .map(Checkin::getCommunityId)
-                .collect(Collectors.toSet());
-
-        List<UUID> checkinIds = itemsToReturn.stream()
-                .map(Checkin::getId)
-                .toList();
-
-        Map<UUID, User> userMap = userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
-
-        Map<UUID, Community> communityMap = communityRepository.findAllById(communityIds).stream()
-                .collect(Collectors.toMap(Community::getId, Function.identity()));
-
-        Map<UUID, Long> commentCountsMap = commentRepository.countActiveByCheckinIds(checkinIds);
-
-        List<FeedItemResult> results = new ArrayList<>();
-        for (Checkin c : itemsToReturn) {
-            User author = userMap.get(c.getUserId());
-            Community community = communityMap.get(c.getCommunityId());
-
-            List<String> mediaKeys = c.getMedia() != null
-                    ? c.getMedia().stream().map(CheckinMedia::getStorageKey).toList()
-                    : Collections.emptyList();
-
-            long commentsCount = commentCountsMap.getOrDefault(c.getId(), 0L);
-
-            results.add(new FeedItemResult(
-                    c.getId(),
-                    c.getUserId(),
-                    author != null ? author.getUsername() : "usuario",
-                    author != null ? author.getName() : "Usuário",
-                    author != null ? author.getAvatarUrl() : null,
-                    c.getCommunityId(),
-                    community != null ? community.getName() : "Comunidade",
-                    c.getCaption(),
-                    mediaKeys,
-                    commentsCount,
-                    c.getCreatedAt()
-            ));
-        }
-
-        return new FeedCursorResult(results, nextCursor, hasMore);
+        return feedItemHydrator.toCursorResult(checkins, limit);
     }
 }

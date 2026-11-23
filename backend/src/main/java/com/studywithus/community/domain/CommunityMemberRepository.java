@@ -17,4 +17,5 @@ public interface CommunityMemberRepository {
     List<CommunityMember> findActiveByCommunityIdsAndUserId(Collection<UUID> communityIds, UUID userId);
     PagedResult<CommunityMember> findActiveMembers(UUID communityId, int page, int size);
     java.util.List<UUID> findActiveCommunityIdsByUserId(UUID userId);
+    java.util.List<UUID> findActiveUserIdsByCommunityId(UUID communityId);
 }

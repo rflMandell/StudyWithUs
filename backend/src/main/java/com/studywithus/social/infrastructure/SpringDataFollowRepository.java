@@ -11,4 +11,7 @@ public interface SpringDataFollowRepository extends JpaRepository<FollowJpaEntit
 
     @Query("SELECT f.id.followingId FROM FollowJpaEntity f WHERE f.id.followerId = :followerId")
     List<UUID> findFollowingIdsByFollowerId(@Param("followerId") UUID followerId);
+
+    @Query("SELECT f.id.followerId FROM FollowJpaEntity f WHERE f.id.followingId = :followingId")
+    List<UUID> findFollowerIdsByFollowingId(@Param("followingId") UUID followingId);
 }

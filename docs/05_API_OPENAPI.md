@@ -83,6 +83,7 @@ POST /checkins
 GET /checkins/{checkinId}
 DELETE /checkins/{checkinId}
 GET /feed
+GET /communities/{communityId}/feed
 ```
 
 ### Comments

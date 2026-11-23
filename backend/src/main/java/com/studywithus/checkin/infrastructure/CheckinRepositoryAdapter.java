@@ -156,4 +156,19 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
     public List<Instant> findActiveCreatedAtByUserIdAndCommunityId(UUID userId, UUID communityId) {
         return repository.findActiveCreatedAtByUserIdAndCommunityId(userId, communityId);
     }
+
+    @Override
+    public List<Checkin> findAllActiveByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return repository.findAllActiveByIds(ids).stream()
+                .map(CheckinJpaEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<Checkin> findByIdIncludingDeleted(UUID id) {
+        return repository.findByIdIncludingDeleted(id).map(CheckinJpaEntity::toDomain);
+    }
 }
