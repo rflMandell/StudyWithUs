@@ -25,6 +25,13 @@ export interface User {
   currentStreak?: number;
   longestStreak?: number;
   badges?: UserBadge[];
+  level?: number;
+  totalXp?: number;
+  currentLevelXp?: number;
+  nextLevelXp?: number;
+  progressPercent?: number;
+  activeTitle?: string;
+  activeAvatarBorder?: string;
   createdAt: string;
 }
 

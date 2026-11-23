@@ -107,6 +107,9 @@ GET /communities/{communityId}/ranking/me
 GET /users/me/points
 GET /users/me/points/history
 GET /users/me/streak
+GET /users/me/level
+GET /users/{userId}/level
+PATCH /users/me/cosmetics
 GET /badges
 GET /badges/{badgeId}
 GET /users/{userId}/badges

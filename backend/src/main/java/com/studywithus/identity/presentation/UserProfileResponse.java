@@ -28,6 +28,13 @@ public record UserProfileResponse(
         int currentStreak,
         int longestStreak,
         List<UserBadgeResponse> badges,
+        int level,
+        long totalXp,
+        long currentLevelXp,
+        long nextLevelXp,
+        double progressPercent,
+        String activeTitle,
+        String activeAvatarBorder,
         Instant createdAt
 ) {
     public static UserProfileResponse from(UserProfileResult result) {
@@ -68,6 +75,13 @@ public record UserProfileResponse(
                 result.currentStreak(),
                 result.longestStreak(),
                 badgeResponses,
+                result.level(),
+                result.totalXp(),
+                result.currentLevelXp(),
+                result.nextLevelXp(),
+                result.progressPercent(),
+                result.activeTitle(),
+                result.activeAvatarBorder(),
                 result.createdAt()
         );
     }

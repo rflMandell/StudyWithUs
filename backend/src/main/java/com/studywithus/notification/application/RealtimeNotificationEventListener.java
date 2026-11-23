@@ -3,6 +3,7 @@ package com.studywithus.notification.application;
 import com.studywithus.checkin.domain.CheckinCreatedEvent;
 import com.studywithus.community.domain.CommunityMemberJoinedEvent;
 import com.studywithus.gamification.domain.StreakUpdatedEvent;
+import com.studywithus.gamification.domain.UserLevelUpEvent;
 import com.studywithus.notification.domain.NotificationType;
 import com.studywithus.notification.domain.RealtimeNotification;
 import com.studywithus.notification.domain.RealtimeNotificationPort;
@@ -104,5 +105,29 @@ public class RealtimeNotificationEventListener {
         );
 
         notificationPort.broadcastToCommunity(event.communityId(), notification, event.userId());
+    }
+
+    @EventListener
+    public void onUserLevelUp(UserLevelUpEvent event) {
+        log.info("Dispatching realtime notification for user level up: userId={}, newLevel={}",
+                event.userId(), event.newLevel());
+
+        RealtimeNotification notification = RealtimeNotification.create(
+                NotificationType.LEVEL_UP,
+                event.userId(),
+                null,
+                "Subiu para o Nível " + event.newLevel() + "!",
+                "Parabéns! Você alcançou o nível " + event.newLevel() + " (" + event.unlockedTitle() + ")!",
+                Map.of(
+                        "userId", event.userId().toString(),
+                        "previousLevel", event.previousLevel(),
+                        "newLevel", event.newLevel(),
+                        "totalXp", event.totalXp(),
+                        "unlockedTitle", event.unlockedTitle(),
+                        "unlockedAvatarBorder", event.unlockedAvatarBorder()
+                )
+        );
+
+        notificationPort.sendToUser(event.userId(), notification);
     }
 }

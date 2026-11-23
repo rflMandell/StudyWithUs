@@ -5,6 +5,8 @@ import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.gamification.domain.BadgeRepository;
 import com.studywithus.gamification.domain.PointTransactionRepository;
 import com.studywithus.gamification.domain.UserBadge;
+import com.studywithus.gamification.domain.UserLevel;
+import com.studywithus.gamification.domain.UserLevelRepository;
 import com.studywithus.gamification.domain.UserStreak;
 import com.studywithus.gamification.domain.UserStreakRepository;
 import com.studywithus.identity.domain.User;
@@ -29,6 +31,7 @@ public class GetUserProfileUseCase implements UseCase<UUID, UserProfileResult> {
     private final CheckinRepository checkinRepository;
     private final UserStreakRepository userStreakRepository;
     private final BadgeRepository badgeRepository;
+    private final UserLevelRepository userLevelRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,6 +44,7 @@ public class GetUserProfileUseCase implements UseCase<UUID, UserProfileResult> {
         long checkinsCount = checkinRepository.countActiveByUserId(userId);
         UserStreak streak = userStreakRepository.findByUserId(userId).orElseGet(() -> UserStreak.empty(userId));
         List<UserBadge> badges = badgeRepository.findUserBadges(userId);
+        UserLevel userLevel = userLevelRepository.findByUserId(userId).orElseGet(() -> UserLevel.initial(userId));
 
         return UserProfileResult.from(
                 user,
@@ -49,7 +53,8 @@ public class GetUserProfileUseCase implements UseCase<UUID, UserProfileResult> {
                 checkinsCount,
                 streak.getCurrentStreak(),
                 streak.getLongestStreak(),
-                badges
+                badges,
+                userLevel
         );
     }
 }

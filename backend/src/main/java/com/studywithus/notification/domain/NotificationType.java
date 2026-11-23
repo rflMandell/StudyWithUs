@@ -9,5 +9,6 @@ public enum NotificationType {
     NEW_COMMENT,
     BADGE_GRANTED,
     CHALLENGE_COMPLETED,
-    JOIN_REQUEST_APPROVED
+    JOIN_REQUEST_APPROVED,
+    LEVEL_UP
 }

@@ -5,10 +5,13 @@ import com.studywithus.checkin.domain.CheckinMedia;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityRepository;
+import com.studywithus.gamification.domain.LevelCosmeticCatalog;
+import com.studywithus.gamification.domain.UserLevel;
+import com.studywithus.gamification.domain.UserLevelRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.social.domain.CommentRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -21,12 +24,33 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class FeedItemHydrator {
 
     private final UserRepository userRepository;
     private final CommunityRepository communityRepository;
     private final CommentRepository commentRepository;
+    private final UserLevelRepository userLevelRepository;
+
+    @Autowired
+    public FeedItemHydrator(
+            UserRepository userRepository,
+            CommunityRepository communityRepository,
+            CommentRepository commentRepository,
+            @Autowired(required = false) UserLevelRepository userLevelRepository
+    ) {
+        this.userRepository = userRepository;
+        this.communityRepository = communityRepository;
+        this.commentRepository = commentRepository;
+        this.userLevelRepository = userLevelRepository;
+    }
+
+    public FeedItemHydrator(
+            UserRepository userRepository,
+            CommunityRepository communityRepository,
+            CommentRepository commentRepository
+    ) {
+        this(userRepository, communityRepository, commentRepository, null);
+    }
 
     public List<Checkin> hydrateInOrder(List<UUID> orderedIds, CheckinRepository checkinRepository) {
         if (orderedIds == null || orderedIds.isEmpty()) {
@@ -79,10 +103,19 @@ public class FeedItemHydrator {
 
         Map<UUID, Long> commentCountsMap = commentRepository.countActiveByCheckinIds(checkinIds);
 
+        Map<UUID, UserLevel> userLevelMap = userLevelRepository != null
+                ? userLevelRepository.findAllByUserIds(userIds).stream()
+                        .collect(Collectors.toMap(UserLevel::getUserId, Function.identity()))
+                : Collections.emptyMap();
+
+        String defaultTitle = LevelCosmeticCatalog.getDefaultTitleForLevel(1);
+        String defaultBorder = LevelCosmeticCatalog.getDefaultBorderForLevel(1);
+
         List<FeedItemResult> results = new ArrayList<>(itemsToReturn.size());
         for (Checkin c : itemsToReturn) {
             User author = userMap.get(c.getUserId());
             Community community = communityMap.get(c.getCommunityId());
+            UserLevel authorLevel = userLevelMap.get(c.getUserId());
 
             List<String> mediaKeys = c.getMedia() != null
                     ? c.getMedia().stream().map(CheckinMedia::getStorageKey).toList()
@@ -96,6 +129,9 @@ public class FeedItemHydrator {
                     author != null ? author.getUsername() : "usuario",
                     author != null ? author.getName() : "Usuário",
                     author != null ? author.getAvatarUrl() : null,
+                    authorLevel != null ? authorLevel.getCurrentLevel() : 1,
+                    authorLevel != null ? authorLevel.getActiveTitle() : defaultTitle,
+                    authorLevel != null ? authorLevel.getActiveAvatarBorder() : defaultBorder,
                     c.getCommunityId(),
                     community != null ? community.getName() : "Comunidade",
                     c.getCaption(),

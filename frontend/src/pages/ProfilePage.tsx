@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Navbar } from '../components/Navbar';
+import { getAvatarBorderStyle } from '../utils/levelCosmetics';
 import { User, UpdateUserData, UserBadge } from '../types/auth';
 import { userService } from '../services/userService';
 import { AlertError } from '../components/AlertError';
@@ -185,7 +186,7 @@ export const ProfilePage: React.FC = () => {
                   fontWeight: 700,
                   fontSize: '2rem',
                   overflow: 'hidden',
-                  border: '3px solid #e2e8f0',
+                  border: getAvatarBorderStyle(profile.activeAvatarBorder),
                   flexShrink: 0,
                 }}
               >
@@ -217,10 +218,59 @@ export const ProfilePage: React.FC = () => {
                   >
                     Ativo
                   </span>
+                  {profile.level != null && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        backgroundColor: '#eef2ff',
+                        color: '#4338ca',
+                        padding: '0.15rem 0.55rem',
+                        borderRadius: '9999px',
+                      }}
+                    >
+                      Nível {profile.level} {profile.activeTitle ? `• ${profile.activeTitle}` : ''}
+                    </span>
+                  )}
                 </div>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '0.15rem' }}>
                   @{profile.username}
                 </p>
+                {profile.level != null && profile.nextLevelXp != null && (
+                  <div style={{ marginTop: '0.6rem', maxWidth: '320px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.75rem',
+                        color: '#475569',
+                        marginBottom: '0.25rem',
+                      }}
+                    >
+                      <span>XP: {profile.currentLevelXp ?? 0} / {profile.nextLevelXp}</span>
+                      <span>{profile.progressPercent ?? 0}%</span>
+                    </div>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '8px',
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: '9999px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${Math.min(Math.max(profile.progressPercent ?? 0, 0), 100)}%`,
+                          height: '100%',
+                          backgroundColor: '#4f46e5',
+                          borderRadius: '9999px',
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 {profile.bio && (
                   <p style={{ marginTop: '0.5rem', fontSize: '0.95rem', color: '#334155', maxWidth: '600px' }}>
                     {profile.bio}

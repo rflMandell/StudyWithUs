@@ -4,6 +4,9 @@ export interface FeedItem {
   authorUsername?: string;
   authorName?: string;
   authorAvatarUrl?: string | null;
+  authorLevel?: number;
+  authorTitle?: string;
+  authorAvatarBorder?: string;
   communityId: string;
   communityName?: string;
   caption: string;

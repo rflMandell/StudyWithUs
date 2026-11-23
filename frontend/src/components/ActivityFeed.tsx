@@ -5,6 +5,7 @@ import { FeedItem } from '../types/feed';
 import { feedService } from '../services/feedService';
 import { useAuth } from '../hooks/useAuth';
 import { CommentSection } from './CommentSection';
+import { getAvatarBorderStyle } from '../utils/levelCosmetics';
 
 export const ActivityFeed: React.FC = () => {
   const { user } = useAuth();
@@ -154,6 +155,7 @@ export const ActivityFeed: React.FC = () => {
                       fontWeight: 700,
                       fontSize: '0.95rem',
                       overflow: 'hidden',
+                      border: getAvatarBorderStyle(item.authorAvatarBorder),
                       flexShrink: 0,
                     }}
                   >
@@ -172,6 +174,25 @@ export const ActivityFeed: React.FC = () => {
                       <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>
                         {item.authorName || 'Estudante'}
                       </span>
+                      {item.authorLevel != null && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            backgroundColor: '#eef2ff',
+                            color: '#4338ca',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '9999px',
+                          }}
+                        >
+                          Nv. {item.authorLevel}
+                        </span>
+                      )}
+                      {item.authorTitle && (
+                        <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 500 }}>
+                          {item.authorTitle}
+                        </span>
+                      )}
                       {item.authorUsername && (
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           @{item.authorUsername}

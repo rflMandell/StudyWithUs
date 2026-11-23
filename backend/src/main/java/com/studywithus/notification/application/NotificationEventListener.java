@@ -6,6 +6,7 @@ import com.studywithus.community.domain.CommunityJoinRequestReviewedEvent;
 import com.studywithus.community.domain.CommunityJoinRequestStatus;
 import com.studywithus.gamification.domain.BadgeGrantedEvent;
 import com.studywithus.gamification.domain.ChallengeCompletedEvent;
+import com.studywithus.gamification.domain.UserLevelUpEvent;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.notification.domain.NotificationType;
@@ -101,5 +102,20 @@ public class NotificationEventListener {
                     event.communityId()
             ));
         }
+    }
+
+    @EventListener
+    public void onUserLevelUp(UserLevelUpEvent event) {
+        log.debug("NotificationEventListener received UserLevelUpEvent for user: {}, newLevel: {}",
+                event.userId(), event.newLevel());
+
+        createInAppNotificationUseCase.execute(new CreateNotificationCommand(
+                event.userId(),
+                NotificationType.LEVEL_UP,
+                "Subiu para o Nível " + event.newLevel() + "!",
+                "Parabéns! Você alcançou o nível " + event.newLevel() + " e desbloqueou o título '" + event.unlockedTitle() + "'!",
+                "USER",
+                event.userId()
+        ));
     }
 }

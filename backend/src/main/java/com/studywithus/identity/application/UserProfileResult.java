@@ -1,6 +1,7 @@
 package com.studywithus.identity.application;
 
 import com.studywithus.gamification.domain.UserBadge;
+import com.studywithus.gamification.domain.UserLevel;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserStatus;
 
@@ -29,6 +30,13 @@ public record UserProfileResult(
         int currentStreak,
         int longestStreak,
         List<UserBadge> badges,
+        int level,
+        long totalXp,
+        long currentLevelXp,
+        long nextLevelXp,
+        double progressPercent,
+        String activeTitle,
+        String activeAvatarBorder,
         Instant createdAt
 ) {
     public static UserProfileResult from(
@@ -40,6 +48,29 @@ public record UserProfileResult(
             int longestStreak,
             List<UserBadge> badges
     ) {
+        return from(
+                user,
+                currentPoints,
+                activeCommunitiesCount,
+                checkinsCount,
+                currentStreak,
+                longestStreak,
+                badges,
+                UserLevel.initial(user.getId())
+        );
+    }
+
+    public static UserProfileResult from(
+            User user,
+            long currentPoints,
+            int activeCommunitiesCount,
+            long checkinsCount,
+            int currentStreak,
+            int longestStreak,
+            List<UserBadge> badges,
+            UserLevel userLevel
+    ) {
+        UserLevel safeLevel = userLevel != null ? userLevel : UserLevel.initial(user.getId());
         return new UserProfileResult(
                 user.getId(),
                 user.getUsername(),
@@ -59,6 +90,13 @@ public record UserProfileResult(
                 currentStreak,
                 longestStreak,
                 badges != null ? badges : Collections.emptyList(),
+                safeLevel.getCurrentLevel(),
+                safeLevel.getTotalXp(),
+                safeLevel.getCurrentLevelXp(),
+                safeLevel.getNextLevelXp(),
+                safeLevel.progressPercent(),
+                safeLevel.getActiveTitle(),
+                safeLevel.getActiveAvatarBorder(),
                 user.getCreatedAt()
         );
     }
