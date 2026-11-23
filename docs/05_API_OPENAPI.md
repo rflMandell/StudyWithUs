@@ -110,6 +110,14 @@ GET /leagues/me/history
 GET /leagues/divisions
 ```
 
+### Study Analytics
+
+``` text
+GET /analytics/study-summary
+GET /analytics/heatmap
+GET /analytics/subjects
+```
+
 ### Gamification
 
 ``` text
