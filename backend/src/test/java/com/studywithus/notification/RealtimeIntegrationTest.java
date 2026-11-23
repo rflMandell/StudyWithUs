@@ -89,7 +89,7 @@ class RealtimeIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Meu primeiro check-in em tempo real!",
-                List.of("study_photo.jpg")
+                List.of()
         );
 
         mockMvc.perform(post("/api/v1/checkins")

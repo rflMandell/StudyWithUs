@@ -83,6 +83,11 @@ organizada de produto e engenharia.
     -   sprints da Fase 2 (Comentários, Badges, Desafios, Notificações, Moderação, Premium)
     -   estratégia e testes por sprint
     -   Definition of Done
+12. **12 --- Roadmap, Sprints e Critérios de Aceitação (Fase 3)**
+    -   escala e gamificação avançada
+    -   sprints da Fase 3 (Imagens, Feed Materializado, Níveis/XP, Ligas, Analytics de Estudo)
+    -   estratégia e testes por sprint
+    -   Definition of Done
 
 ## Hierarquia de autoridade
 

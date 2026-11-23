@@ -64,6 +64,7 @@ POST /communities
 GET /communities
 GET /communities/{communityId}
 PATCH /communities/{communityId}
+POST /communities/{communityId}/cover/upload
 
 POST /communities/{communityId}/members
 DELETE /communities/{communityId}/members/{userId}
@@ -236,14 +237,22 @@ Fluxo:
 ``` text
 POST /uploads
       ↓
-signed URL
+signed URL (PUT direto ao Object Storage)
       ↓
-Object Storage
+POST /uploads/{mediaId}/confirm (validação MIME real + processamento assíncrono)
       ↓
-POST /checkins
+POST /checkins | POST /users/me/avatar/upload | POST /communities/{communityId}/cover/upload
 ```
 
-O backend valida `storageKey` antes de associar mídia ao recurso.
+Endpoints de mídia:
+
+``` text
+POST /uploads
+POST /uploads/{mediaId}/confirm
+GET /uploads/{mediaId}
+```
+
+O backend valida `storageKey`, ownership, extensão, tamanho máximo e MIME type real (magic bytes) antes de associar mídia ao recurso. Imagens passam por sanitização de metadados EXIF e geração assíncrona de thumbnails.
 
 ## 9. OpenAPI
 

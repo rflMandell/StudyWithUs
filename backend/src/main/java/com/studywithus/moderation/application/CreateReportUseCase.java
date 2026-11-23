@@ -4,6 +4,7 @@ import com.studywithus.checkin.domain.Checkin;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.CommunityRepository;
 import com.studywithus.identity.domain.UserRepository;
+import com.studywithus.media.domain.MediaAssetRepository;
 import com.studywithus.moderation.domain.Report;
 import com.studywithus.moderation.domain.ReportCreatedEvent;
 import com.studywithus.moderation.domain.ReportRepository;
@@ -26,6 +27,7 @@ public class CreateReportUseCase implements UseCase<CreateReportCommand, ReportR
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final CommunityRepository communityRepository;
+    private final MediaAssetRepository mediaAssetRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -82,6 +84,11 @@ public class CreateReportUseCase implements UseCase<CreateReportCommand, ReportR
             case COMMUNITY -> {
                 communityRepository.findById(command.targetId())
                         .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade denunciada não foi encontrada"));
+            }
+            case MEDIA -> {
+                mediaAssetRepository.findById(command.targetId())
+                        .filter(m -> m.isVisible())
+                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "MEDIA_NOT_FOUND", "Mídia denunciada não foi encontrada"));
             }
         }
     }

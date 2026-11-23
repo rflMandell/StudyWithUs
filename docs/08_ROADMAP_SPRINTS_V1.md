@@ -303,6 +303,8 @@ O detalhamento completo das sprints, estratégia, entregas e critérios de teste
 
 ### Fase 3
 
+O detalhamento completo das sprints, estratégia, entregas e critérios de teste da Fase 3 encontra-se no documento [12_ROADMAP_SPRINTS_FASE_3.md](file:///Users/rafaelmandel/Documents/GitHub/studywithus/docs/12_ROADMAP_SPRINTS_FASE_3.md):
+
 -   imagens;
 -   analytics;
 -   feed materializado;

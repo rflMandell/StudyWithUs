@@ -160,7 +160,7 @@ class CommentIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Hoje estudei grafos e caminhos mínimos com Dijkstra por 2h!",
-                List.of("storage/photo1.png")
+                List.of()
         );
 
         MvcResult res = mockMvc.perform(post("/api/v1/checkins")

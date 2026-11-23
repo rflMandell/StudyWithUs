@@ -144,7 +144,7 @@ class FeedIntegrationTest {
                         .content(objectMapper.writeValueAsString(new CreateCheckinRequest(
                                 communityId,
                                 "Primeiro check-in de estudo da Alice",
-                                List.of("foto_resumo.png")
+                                List.of()
                         ))))
                 .andExpect(status().isCreated())
                 .andReturn();

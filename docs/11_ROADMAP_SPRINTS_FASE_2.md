@@ -240,6 +240,8 @@ Relatórios de métricas e health checks 100% operacionais
 
 ### Fase 3
 
+O detalhamento completo das sprints, estratégia, entregas e critérios de teste da Fase 3 encontra-se no documento [12_ROADMAP_SPRINTS_FASE_3.md](file:///Users/rafaelmandel/Documents/GitHub/studywithus/docs/12_ROADMAP_SPRINTS_FASE_3.md):
+
 -   upload e processamento seguro de imagens;
 -   feed materializado com projeção em Redis;
 -   analytics agregados de estudo;

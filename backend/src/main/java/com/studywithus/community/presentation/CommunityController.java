@@ -19,6 +19,7 @@ import com.studywithus.community.application.RequestJoinCommunityCommand;
 import com.studywithus.community.application.RequestJoinCommunityUseCase;
 import com.studywithus.community.application.ReviewJoinRequestCommand;
 import com.studywithus.community.application.ReviewJoinRequestUseCase;
+import com.studywithus.community.application.UpdateCommunityCoverUseCase;
 import com.studywithus.community.application.UpdateMemberRoleCommand;
 import com.studywithus.community.application.UpdateMemberRoleUseCase;
 import com.studywithus.community.domain.CommunityJoinRequestStatus;
@@ -60,6 +61,7 @@ public class CommunityController {
     private final ReviewJoinRequestUseCase reviewJoinRequestUseCase;
     private final UpdateMemberRoleUseCase updateMemberRoleUseCase;
     private final RemoveCommunityMemberUseCase removeCommunityMemberUseCase;
+    private final UpdateCommunityCoverUseCase updateCommunityCoverUseCase;
 
     @PostMapping
     public ResponseEntity<CommunityResponse> createCommunity(
@@ -190,6 +192,16 @@ public class CommunityController {
                 new UpdateMemberRoleCommand(communityId, userId, principal.getId(), request.role())
         );
         return ResponseEntity.ok(CommunityMemberResponse.from(result));
+    }
+
+    @PostMapping("/{communityId}/cover/upload")
+    public ResponseEntity<CommunityResponse> uploadCover(
+            @PathVariable UUID communityId,
+            @Valid @RequestBody UpdateCommunityCoverRequest request,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
+        CommunityResult result = updateCommunityCoverUseCase.execute(communityId, principal.getId(), request.mediaId());
+        return ResponseEntity.ok(CommunityResponse.from(result));
     }
 
     @DeleteMapping("/{communityId}/members/{userId}")

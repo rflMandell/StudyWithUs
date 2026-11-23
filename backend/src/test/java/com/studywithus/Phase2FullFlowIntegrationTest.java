@@ -161,7 +161,7 @@ class Phase2FullFlowIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Estudei Grafos e Algoritmo de Kruskal por 2 horas!",
-                List.of("storage/graph1.png")
+                List.of()
         );
 
         MvcResult res = mockMvc.perform(post("/api/v1/checkins")

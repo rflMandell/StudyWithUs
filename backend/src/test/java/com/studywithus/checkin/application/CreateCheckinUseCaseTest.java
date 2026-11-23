@@ -9,6 +9,7 @@ import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
 import com.studywithus.community.domain.CommunityRole;
 import com.studywithus.community.domain.MemberStatus;
+import com.studywithus.media.application.ValidateMediaOwnershipUseCase;
 import com.studywithus.shared.domain.DomainException;
 import com.studywithus.shared.infrastructure.IdempotencyService;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +42,9 @@ class CreateCheckinUseCaseTest {
 
     @Mock
     private CommunityMemberRepository communityMemberRepository;
+
+    @Mock
+    private ValidateMediaOwnershipUseCase validateMediaOwnershipUseCase;
 
     @Mock
     private IdempotencyService idempotencyService;

@@ -273,7 +273,7 @@ class ChallengeIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Check-in #1 para o Desafio: Estudei JPA e Flyway!",
-                List.of("storage/photo_challenge_1.png")
+                List.of()
         );
 
         mockMvc.perform(post("/api/v1/checkins")
@@ -299,7 +299,7 @@ class ChallengeIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Check-in #2 para o Desafio: Desafio cumprido com sucesso!",
-                List.of("storage/photo_challenge_2.png")
+                List.of()
         );
 
         mockMvc.perform(post("/api/v1/checkins")

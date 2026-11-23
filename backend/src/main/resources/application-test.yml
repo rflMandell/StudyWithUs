@@ -48,3 +48,11 @@ management:
 app:
   rate-limiting:
     enabled: false
+  media:
+    storage-type: local
+    local-dir: ${java.io.tmpdir}/studywithus-media-test
+    public-base-url: http://localhost:8080/api/v1/media/public
+    upload-base-url: http://localhost:8080/api/v1/media/storage
+    presign-secret: test-media-presign-secret-key
+    presign-expiration-seconds: 300
+    max-file-size-bytes: 5242880

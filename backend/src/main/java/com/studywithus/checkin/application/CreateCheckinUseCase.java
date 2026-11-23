@@ -7,6 +7,8 @@ import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
+import com.studywithus.media.application.ValidateMediaOwnershipUseCase;
+import com.studywithus.media.domain.MediaPurpose;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
 import com.studywithus.shared.infrastructure.IdempotencyService;
@@ -26,6 +28,7 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
     private final CheckinRepository checkinRepository;
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final ValidateMediaOwnershipUseCase validateMediaOwnershipUseCase;
     private final IdempotencyService idempotencyService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -54,6 +57,10 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
                         "COMMUNITY_NOT_A_MEMBER",
                         "User must be an active member of the community to create a check-in"
                 ));
+
+        if (command.mediaKeys() != null && !command.mediaKeys().isEmpty()) {
+            validateMediaOwnershipUseCase.validateStorageKeys(command.mediaKeys(), command.userId(), MediaPurpose.CHECKIN);
+        }
 
         Checkin checkin = Checkin.create(
                 command.userId(),

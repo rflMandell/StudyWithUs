@@ -71,6 +71,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/api/v1/webhooks/**",
+                                "/api/v1/media/storage/**",
+                                "/api/v1/media/public/**",
                                 "/actuator/**",
                                 "/error"
                         ).permitAll()

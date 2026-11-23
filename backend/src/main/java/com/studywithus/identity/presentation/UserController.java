@@ -1,6 +1,7 @@
 package com.studywithus.identity.presentation;
 
 import com.studywithus.identity.application.GetUserProfileUseCase;
+import com.studywithus.identity.application.UpdateUserAvatarUseCase;
 import com.studywithus.identity.application.UpdateUserProfileUseCase;
 import com.studywithus.identity.application.UserProfileResult;
 import com.studywithus.identity.infrastructure.SecurityUserPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +26,7 @@ public class UserController {
 
     private final GetUserProfileUseCase getUserProfileUseCase;
     private final UpdateUserProfileUseCase updateUserProfileUseCase;
+    private final UpdateUserAvatarUseCase updateUserAvatarUseCase;
 
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getCurrentUser(@AuthenticationPrincipal SecurityUserPrincipal principal) {
@@ -37,6 +40,15 @@ public class UserController {
             @AuthenticationPrincipal SecurityUserPrincipal principal
     ) {
         UserProfileResult result = updateUserProfileUseCase.execute(request.toCommand(principal.getId()));
+        return ResponseEntity.ok(UserProfileResponse.from(result));
+    }
+
+    @PostMapping("/me/avatar/upload")
+    public ResponseEntity<UserProfileResponse> uploadAvatar(
+            @Valid @RequestBody UpdateAvatarRequest request,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
+        UserProfileResult result = updateUserAvatarUseCase.execute(principal.getId(), request.mediaId());
         return ResponseEntity.ok(UserProfileResponse.from(result));
     }
 

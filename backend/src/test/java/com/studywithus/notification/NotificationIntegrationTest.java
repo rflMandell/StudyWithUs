@@ -141,7 +141,7 @@ class NotificationIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Estudando arquitetura orientada a eventos por 2 horas!",
-                List.of("storage/photo_s16.png")
+                List.of()
         );
         MvcResult checkinRes = mockMvc.perform(post("/api/v1/checkins")
                         .header("Authorization", "Bearer " + tokenUserA)

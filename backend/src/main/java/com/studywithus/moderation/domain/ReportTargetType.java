@@ -4,5 +4,6 @@ public enum ReportTargetType {
     CHECKIN,
     COMMENT,
     USER,
-    COMMUNITY
+    COMMUNITY,
+    MEDIA
 }

@@ -166,7 +166,7 @@ class ModerationIntegrationTest {
         CreateCheckinRequest checkinReq = new CreateCheckinRequest(
                 communityId,
                 "Study session on distributed systems",
-                List.of("storage/photo1.png")
+                List.of()
         );
         MvcResult checkinRes = mockMvc.perform(post("/api/v1/checkins")
                         .header("Authorization", "Bearer " + tokenOwner)

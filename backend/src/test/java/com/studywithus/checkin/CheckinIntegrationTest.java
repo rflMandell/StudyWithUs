@@ -8,6 +8,9 @@ import com.studywithus.community.presentation.CommunityResponse;
 import com.studywithus.community.presentation.CreateCommunityRequest;
 import com.studywithus.identity.presentation.AuthResponse;
 import com.studywithus.identity.presentation.RegisterRequest;
+import com.studywithus.media.domain.MediaPurpose;
+import com.studywithus.media.presentation.RequestUploadUrlRequest;
+import com.studywithus.media.presentation.UploadUrlResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -21,6 +24,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +57,7 @@ class CheckinIntegrationTest {
     private static String nonMemberToken;
     private static UUID communityId;
     private static UUID createdCheckinId;
+    private static String uploadedMediaKey;
 
     @Test
     @Order(1)
@@ -137,12 +146,36 @@ class CheckinIntegrationTest {
 
     @Test
     @Order(3)
-    @DisplayName("Author (active member) creates check-in with Idempotency-Key (201 Created)")
+    @DisplayName("Author (active member) creates check-in with uploaded media and Idempotency-Key (201 Created)")
     void step3_authorCreatesCheckin() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB), "png", baos);
+        byte[] pngBytes = baos.toByteArray();
+
+        MvcResult uploadUrlRes = mockMvc.perform(post("/api/v1/uploads")
+                        .header("Authorization", "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RequestUploadUrlRequest(
+                                MediaPurpose.CHECKIN, "termo_ex1.png", "image/png", pngBytes.length, null))))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UploadUrlResponse uploadUrl = objectMapper.readValue(uploadUrlRes.getResponse().getContentAsString(), UploadUrlResponse.class);
+        uploadedMediaKey = uploadUrl.storageKey();
+
+        URI presignedUri = URI.create(uploadUrl.presignedUrl());
+        mockMvc.perform(put(presignedUri.getPath() + "?" + presignedUri.getQuery())
+                        .contentType("image/png")
+                        .content(pngBytes))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/uploads/" + uploadUrl.mediaId() + "/confirm")
+                        .header("Authorization", "Bearer " + authorToken))
+                .andExpect(status().isOk());
+
         CreateCheckinRequest request = new CreateCheckinRequest(
                 communityId,
                 "Capítulo 4 - Entropia finalizado com 10 exercícios",
-                List.of("uploads/termo_ex1.png")
+                List.of(uploadedMediaKey)
         );
 
         MvcResult result = mockMvc.perform(post("/api/v1/checkins")
@@ -153,7 +186,7 @@ class CheckinIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.caption").value("Capítulo 4 - Entropia finalizado com 10 exercícios"))
                 .andExpect(jsonPath("$.userId").value(authorId.toString()))
-                .andExpect(jsonPath("$.mediaKeys[0]").value("uploads/termo_ex1.png"))
+                .andExpect(jsonPath("$.mediaKeys[0]").value(uploadedMediaKey))
                 .andReturn();
 
         CheckinResponse checkin = objectMapper.readValue(result.getResponse().getContentAsString(), CheckinResponse.class);
@@ -168,7 +201,7 @@ class CheckinIntegrationTest {
         CreateCheckinRequest request = new CreateCheckinRequest(
                 communityId,
                 "Capítulo 4 - Entropia finalizado com 10 exercícios",
-                List.of("uploads/termo_ex1.png")
+                List.of(uploadedMediaKey)
         );
 
         MvcResult result = mockMvc.perform(post("/api/v1/checkins")

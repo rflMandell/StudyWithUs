@@ -6,6 +6,10 @@ import com.studywithus.community.domain.CommunityMember;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
+import com.studywithus.media.domain.MediaAsset;
+import com.studywithus.media.domain.MediaAssetRepository;
+import com.studywithus.media.domain.MediaPurpose;
+import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.moderation.domain.AuditLog;
 import com.studywithus.moderation.domain.AuditLogRepository;
 import com.studywithus.moderation.domain.ModerationAction;
@@ -41,6 +45,8 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final MediaAssetRepository mediaAssetRepository;
+    private final ObjectStoragePort objectStoragePort;
     private final CreateInAppNotificationUseCase createInAppNotificationUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -110,6 +116,13 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
             case USER -> {
                 // Any active user with administrative context can moderate users
             }
+            case MEDIA -> {
+                MediaAsset asset = mediaAssetRepository.findById(report.getTargetId())
+                        .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "MEDIA_NOT_FOUND", "Mídia não encontrada"));
+                if (asset.getPurpose() == MediaPurpose.COMMUNITY_COVER && asset.getTargetId() != null) {
+                    assertCommunityModerator(asset.getTargetId(), reviewerId);
+                }
+            }
         }
     }
 
@@ -141,6 +154,22 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
                         checkin.delete();
                         checkinRepository.save(checkin);
                         log.info("Check-in {} removed by moderator {}", checkin.getId(), command.reviewerId());
+                    }
+                } else if (report.getTargetType() == com.studywithus.moderation.domain.ReportTargetType.MEDIA) {
+                    MediaAsset asset = mediaAssetRepository.findById(report.getTargetId()).orElse(null);
+                    if (asset != null) {
+                        snapshot = "{\"storageKey\":\"" + escapeJson(asset.getStorageKey()) + "\",\"ownerId\":\"" + asset.getOwnerId() + "\"}";
+                        asset.reject("Removed by moderator: " + report.getReason());
+                        mediaAssetRepository.save(asset);
+                        try {
+                            objectStoragePort.delete(asset.getStorageKey());
+                            if (asset.getThumbnailKey() != null) {
+                                objectStoragePort.delete(asset.getThumbnailKey());
+                            }
+                        } catch (Exception ex) {
+                            log.warn("Failed to delete moderated media object {}: {}", asset.getStorageKey(), ex.getMessage());
+                        }
+                        log.info("Media {} removed by moderator {}", asset.getId(), command.reviewerId());
                     }
                 }
             }
@@ -180,6 +209,7 @@ public class ResolveReportUseCase implements UseCase<ResolveReportCommand, Repor
             case CHECKIN -> checkinRepository.findById(report.getTargetId()).map(Checkin::getUserId).orElse(null);
             case USER -> report.getTargetId();
             case COMMUNITY -> null;
+            case MEDIA -> mediaAssetRepository.findById(report.getTargetId()).map(MediaAsset::getOwnerId).orElse(null);
         };
     }
 
