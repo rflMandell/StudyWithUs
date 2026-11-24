@@ -52,6 +52,7 @@ public class LocalMediaStorageController {
             throw new DomainException(HttpStatus.BAD_REQUEST, "INVALID_CONTENT_LENGTH", "Uploaded body size does not match signed content length");
         }
         MediaAsset asset = mediaAssetRepository.findByStorageKey(storageKey)
+                .or(() -> mediaAssetRepository.findByStorageKey(toWebpKey(storageKey)))
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "MEDIA_NOT_FOUND", "Media asset not found"));
         if (asset.getStatus() != MediaStatus.PENDING) {
             throw new DomainException(HttpStatus.CONFLICT, "MEDIA_ALREADY_UPLOADED", "Media upload is no longer pending");
@@ -94,5 +95,14 @@ public class LocalMediaStorageController {
             throw new DomainException(HttpStatus.BAD_REQUEST, "INVALID_STORAGE_KEY", "Invalid media path");
         }
         return uri.substring(idx + prefix.length());
+    }
+
+    private static String toWebpKey(String storageKey) {
+        int lastDot = storageKey.lastIndexOf('.');
+        int lastSlash = storageKey.lastIndexOf('/');
+        if (lastDot > lastSlash) {
+            return storageKey.substring(0, lastDot) + ".webp";
+        }
+        return storageKey + ".webp";
     }
 }

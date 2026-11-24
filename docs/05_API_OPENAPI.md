@@ -289,11 +289,11 @@ POST /webhooks/subscription
 Fluxo:
 
 ``` text
-POST /uploads
+POST /uploads (aceita JPEG, PNG ou WebP; frontend converte para WebP antes do envio)
       ↓
 signed URL (PUT direto ao Object Storage)
       ↓
-POST /uploads/{mediaId}/confirm (validação MIME real + processamento assíncrono)
+POST /uploads/{mediaId}/confirm (validação MIME real + sanitização EXIF + conversão garantida para WebP + thumbnail .webp)
       ↓
 POST /checkins | POST /users/me/avatar/upload | POST /communities/{communityId}/cover/upload
 ```
@@ -306,11 +306,12 @@ POST /uploads/{mediaId}/confirm
 GET /uploads/{mediaId}
 ```
 
-O backend valida `storageKey`, ownership, extensão, tamanho máximo e MIME type real (magic bytes) antes de associar mídia ao recurso. Imagens passam por sanitização de metadados EXIF e geração assíncrona de thumbnails.
+O backend valida `storageKey`, ownership, extensão, tamanho máximo e MIME type real (magic bytes) antes de associar mídia ao recurso. Todas as imagens passam por sanitização de metadados EXIF, conversão obrigatória para WebP (`image/webp`, `storageKey` e `thumbnailKey` com extensão `.webp`) e remoção de eventuais objetos temporários não-WebP no Object Storage.
 
 Regras adicionais de mídia:
-- Fotos de perfil não podem ser enviadas via URL manual em `PATCH /users/me`; devem obrigatoriamente passar pelo fluxo de upload e confirmação e serem associadas via `POST /users/me/avatar/upload` (`mediaId`).
-- Fotos de check-in exigem `mediaKeys` previamente confirmadas para o propósito `CHECKIN`. As respostas de check-in e feed retornam `mediaUrls` (URLs públicas resolvidas no S3) além de `mediaKeys`.
+- **Conversão obrigatória para WebP (ADR-014)**: qualquer nova feature ou manutenção envolvendo anexo de imagens deve utilizar `mediaService.uploadImage` (frontend) e o pipeline `POST /uploads` + `POST /uploads/{mediaId}/confirm` (backend), garantindo que apenas arquivos `.webp` sejam armazenados no Object Storage e referenciados nas entidades.
+- Fotos de perfil não podem ser enviadas via URL manual em `PATCH /users/me`; devem obrigatoriamente passar pelo fluxo de upload e confirmação e serem associadas via `POST /users/me/avatar/upload` (`mediaId`), resultando em uma `avatarUrl` `.webp`.
+- Fotos de check-in exigem `mediaKeys` previamente confirmadas para o propósito `CHECKIN`. As respostas de check-in e feed retornam `mediaUrls` (URLs públicas `.webp` resolvidas no Object Storage) além de `mediaKeys`.
 
 ## 9. OpenAPI
 

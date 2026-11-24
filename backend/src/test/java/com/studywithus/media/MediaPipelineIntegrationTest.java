@@ -189,31 +189,42 @@ class MediaPipelineIntegrationTest {
                         .header("Authorization", "Bearer " + otherUserToken))
                 .andExpect(status().isForbidden());
 
-        // Owner confirms upload
-        mockMvc.perform(post("/api/v1/uploads/" + checkinMediaId + "/confirm")
+        // Owner confirms upload -> converted to WebP and marked PROCESSED
+        MvcResult confirmRes = mockMvc.perform(post("/api/v1/uploads/" + checkinMediaId + "/confirm")
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CONFIRMED"))
-                .andExpect(jsonPath("$.detectedMimeType").value("image/png"));
+                .andExpect(jsonPath("$.status").value(MediaStatus.PROCESSED.name()))
+                .andExpect(jsonPath("$.detectedMimeType").value("image/webp"))
+                .andExpect(jsonPath("$.storageKey").value(org.hamcrest.Matchers.endsWith(".webp")))
+                .andExpect(jsonPath("$.thumbnailKey").value(org.hamcrest.Matchers.endsWith(".webp")))
+                .andReturn();
 
-        // Ensure async processing completes deterministically for assertion
-        processingListener.processMedia(new MediaConfirmedEvent(checkinMediaId, ownerId, checkinStorageKey, "image/png"));
+        MediaAssetResponse confirmedAsset = objectMapper.readValue(confirmRes.getResponse().getContentAsString(), MediaAssetResponse.class);
+        checkinStorageKey = confirmedAsset.storageKey();
+
+        // Ensure async processing listener remains idempotent
+        processingListener.processMedia(new MediaConfirmedEvent(checkinMediaId, ownerId, checkinStorageKey, "image/webp"));
 
         MvcResult assetRes = mockMvc.perform(get("/api/v1/uploads/" + checkinMediaId)
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(MediaStatus.PROCESSED.name()))
+                .andExpect(jsonPath("$.detectedMimeType").value("image/webp"))
                 .andExpect(jsonPath("$.width").value(800))
                 .andExpect(jsonPath("$.height").value(600))
                 .andExpect(jsonPath("$.thumbnailUrl").isNotEmpty())
                 .andReturn();
 
         MediaAssetResponse asset = objectMapper.readValue(assetRes.getResponse().getContentAsString(), MediaAssetResponse.class);
-        assertThat(asset.thumbnailKey()).startsWith("thumbnails/");
+        assertThat(asset.thumbnailKey()).startsWith("thumbnails/").endsWith(".webp");
 
-        // Public media & thumbnail endpoints serve bytes
+        // Public media & thumbnail endpoints serve WebP bytes
         URI publicUri = URI.create(asset.url());
-        mockMvc.perform(get(publicUri.getPath())).andExpect(status().isOk());
+        MvcResult publicRes = mockMvc.perform(get(publicUri.getPath())).andExpect(status().isOk()).andReturn();
+        assertThat(publicRes.getResponse().getContentType()).isEqualTo("image/webp");
+        byte[] servedBytes = publicRes.getResponse().getContentAsByteArray();
+        assertThat(com.studywithus.media.application.MediaValidationService.detectRealMimeType(servedBytes))
+                .contains("image/webp");
         URI thumbUri = URI.create(asset.thumbnailUrl());
         mockMvc.perform(get(thumbUri.getPath())).andExpect(status().isOk());
 
@@ -253,16 +264,21 @@ class MediaPipelineIntegrationTest {
         URI avatarUri = URI.create(avatarUpload.presignedUrl());
         mockMvc.perform(put(avatarUri.getPath() + "?" + avatarUri.getQuery()).contentType("image/png").content(pngBytes))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/uploads/" + avatarUpload.mediaId() + "/confirm")
+        MvcResult avatarConfirmRes = mockMvc.perform(post("/api/v1/uploads/" + avatarUpload.mediaId() + "/confirm")
                         .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.detectedMimeType").value("image/webp"))
+                .andExpect(jsonPath("$.storageKey").value(org.hamcrest.Matchers.endsWith(".webp")))
+                .andReturn();
+        MediaAssetResponse avatarConfirmed = objectMapper.readValue(avatarConfirmRes.getResponse().getContentAsString(), MediaAssetResponse.class);
 
         mockMvc.perform(post("/api/v1/users/me/avatar/upload")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateAvatarRequest(avatarUpload.mediaId()))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.avatarUrl").value(org.hamcrest.Matchers.containsString(avatarUpload.storageKey())));
+                .andExpect(jsonPath("$.avatarUrl").value(org.hamcrest.Matchers.containsString(avatarConfirmed.storageKey())))
+                .andExpect(jsonPath("$.avatarUrl").value(org.hamcrest.Matchers.endsWith(".webp")));
 
         // Community cover upload (non-admin rejected)
         mockMvc.perform(post("/api/v1/uploads")
@@ -284,16 +300,21 @@ class MediaPipelineIntegrationTest {
         URI coverUri = URI.create(coverUpload.presignedUrl());
         mockMvc.perform(put(coverUri.getPath() + "?" + coverUri.getQuery()).contentType("image/png").content(pngBytes))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/uploads/" + coverUpload.mediaId() + "/confirm")
+        MvcResult coverConfirmRes = mockMvc.perform(post("/api/v1/uploads/" + coverUpload.mediaId() + "/confirm")
                         .header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.detectedMimeType").value("image/webp"))
+                .andExpect(jsonPath("$.storageKey").value(org.hamcrest.Matchers.endsWith(".webp")))
+                .andReturn();
+        MediaAssetResponse coverConfirmed = objectMapper.readValue(coverConfirmRes.getResponse().getContentAsString(), MediaAssetResponse.class);
 
         mockMvc.perform(post("/api/v1/communities/" + communityId + "/cover/upload")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new UpdateCommunityCoverRequest(coverUpload.mediaId()))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.imageUrl").value(org.hamcrest.Matchers.containsString(coverUpload.storageKey())));
+                .andExpect(jsonPath("$.imageUrl").value(org.hamcrest.Matchers.containsString(coverConfirmed.storageKey())))
+                .andExpect(jsonPath("$.imageUrl").value(org.hamcrest.Matchers.endsWith(".webp")));
     }
 
     @Test

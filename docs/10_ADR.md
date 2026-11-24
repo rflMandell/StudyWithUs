@@ -200,6 +200,14 @@ Imagens/arquivos ficam em object storage.
 
 PostgreSQL guarda metadados e storage key.
 
+### Regra obrigatória de formato (WebP)
+
+**Toda imagem deve ser convertida para WebP (`image/webp`, extensão `.webp`) antes de ser persistida de forma definitiva no Object Storage**, independentemente do fluxo ou origem do anexo (avatar de usuário, foto de check-in, capa de comunidade ou novas features):
+
+- **Frontend (`mediaService.uploadImage`)**: deve converter imagens aceitas (JPEG, PNG, WebP) para `.webp` no cliente antes de solicitar a URL pré-assinada e enviar ao Object Storage.
+- **Backend (`ConfirmUploadUseCase` / `ImageProcessorPort`)**: deve aceitar JPEG, PNG e WebP na entrada, validar os magic bytes reais, higienizar metadados EXIF, converter para WebP (imagem principal e thumbnail `.webp`), remover qualquer objeto temporário não-WebP do Object Storage e persistir apenas a `storageKey` `.webp` antes da associação ao recurso de domínio.
+- **Manutenção e novas features**: qualquer novo ponto de upload ou anexo de imagem deve obrigatoriamente reutilizar `mediaService.uploadImage` no frontend e `ConfirmUploadUseCase` / `ImageProcessorPort` no backend, garantindo que nenhuma imagem permaneça em PNG/JPEG no Object Storage.
+
 ------------------------------------------------------------------------
 
 ## ADR-015 --- Paginação por cursor no feed

@@ -33,7 +33,7 @@ Entregas:
 -   integração com Object Storage (S3 / MinIO / Cloud Storage via `ADR-014`);
 -   geração de URLs pré-assinadas (`presigned URLs`) para upload direto pelo cliente;
 -   validação rigorosa de metadados no backend: extensão, tamanho máximo, MIME type real e ownership do recurso;
--   processamento assíncrono de imagens: sanitização de metadados EXIF, compressão e geração de thumbnails otimizados;
+-   conversão obrigatória de imagens (JPEG/PNG/WebP) para **WebP** antes da persistência definitiva no Object Storage (client-side via `mediaService` e server-side via `ConfirmUploadUseCase` / `ImageProcessorPort`), com sanitização de metadados EXIF e geração de thumbnails `.webp`;
 -   associação de imagens a check-ins, avatares de usuário e capas/banners de comunidades;
 -   integração com política de moderação de denúncias de imagem ofensiva.
 

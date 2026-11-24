@@ -1,5 +1,6 @@
 package com.studywithus.media.application;
 
+import com.studywithus.media.domain.ImageProcessorPort;
 import com.studywithus.media.domain.MediaAsset;
 import com.studywithus.media.domain.MediaAssetRepository;
 import com.studywithus.media.domain.MediaConfirmedEvent;
@@ -22,6 +23,7 @@ public class ConfirmUploadUseCase implements UseCase<ConfirmUploadCommand, Media
 
     private final MediaAssetRepository mediaAssetRepository;
     private final ObjectStoragePort objectStoragePort;
+    private final ImageProcessorPort imageProcessorPort;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.media.max-file-size-bytes:5242880}")
@@ -69,20 +71,60 @@ public class ConfirmUploadUseCase implements UseCase<ConfirmUploadCommand, Media
             throw new DomainException(HttpStatus.UNPROCESSABLE_ENTITY, "MEDIA_EXTENSION_MISMATCH", "File content does not match declared file extension");
         }
 
-        asset.confirm(detectedMimeType, rawBytes.length);
+        ImageProcessorPort.ProcessedImage processed = imageProcessorPort.process(rawBytes, detectedMimeType);
+
+        String originalStorageKey = asset.getStorageKey();
+        String webpStorageKey = toWebpKey(originalStorageKey);
+        String thumbnailKey = buildThumbnailKey(webpStorageKey);
+
+        objectStoragePort.upload(webpStorageKey, processed.sanitizedBytes(), processed.mimeType());
+        objectStoragePort.upload(thumbnailKey, processed.thumbnailBytes(), processed.mimeType());
+
+        if (!webpStorageKey.equals(originalStorageKey)) {
+            try {
+                objectStoragePort.delete(originalStorageKey);
+            } catch (Exception ex) {
+                log.warn("Failed to delete pre-conversion object {}: {}", originalStorageKey, ex.getMessage());
+            }
+        }
+
+        asset.setStorageKey(webpStorageKey);
+        asset.confirm(processed.mimeType(), processed.sanitizedBytes().length);
+        asset.markProcessed(
+                thumbnailKey,
+                processed.width(),
+                processed.height(),
+                processed.sanitizedBytes().length
+        );
         MediaAsset saved = mediaAssetRepository.save(asset);
 
-        log.info("Media upload confirmed: mediaId={}, ownerId={}, mimeType={}, size={}",
-                saved.getId(), saved.getOwnerId(), detectedMimeType, rawBytes.length);
+        log.info("Media upload confirmed and converted to WebP: mediaId={}, ownerId={}, originalMime={}, finalKey={}, size={}",
+                saved.getId(), saved.getOwnerId(), detectedMimeType, webpStorageKey, processed.sanitizedBytes().length);
 
         eventPublisher.publishEvent(new MediaConfirmedEvent(
                 saved.getId(),
                 saved.getOwnerId(),
                 saved.getStorageKey(),
-                detectedMimeType
+                processed.mimeType()
         ));
 
         return toResult(saved);
+    }
+
+    static String toWebpKey(String storageKey) {
+        int lastDot = storageKey.lastIndexOf('.');
+        int lastSlash = storageKey.lastIndexOf('/');
+        if (lastDot > lastSlash) {
+            return storageKey.substring(0, lastDot) + ".webp";
+        }
+        return storageKey + ".webp";
+    }
+
+    static String buildThumbnailKey(String storageKey) {
+        if (storageKey.startsWith("uploads/")) {
+            return "thumbnails/" + storageKey.substring("uploads/".length());
+        }
+        return "thumbnails/" + storageKey;
     }
 
     private void rejectAndCleanup(MediaAsset asset, String reason) {

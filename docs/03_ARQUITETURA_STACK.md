@@ -94,22 +94,26 @@ Redis não deve substituir PostgreSQL como fonte de verdade.
 
 Mídias não serão armazenadas diretamente no PostgreSQL.
 
+**Padrão obrigatório:** toda imagem enviada pela aplicação (avatar, check-in, capa de comunidade ou qualquer anexo futuro) deve ser convertida para **WebP** (`image/webp`, `.webp`) antes de ser salva definitivamente no Object Storage. O frontend (`mediaService`) realiza a conversão client-side antes do `PUT`, e o backend (`ConfirmUploadUseCase` + `ImageProcessorPort`) garante a conversão, sanitização EXIF, geração de thumbnail `.webp` e limpeza de eventuais objetos não-WebP para chamadas diretas de API.
+
 Fluxo:
 
 ``` text
-Client
+Client (converte JPEG/PNG -> WebP)
  ↓
 API solicita upload
  ↓
 Signed URL
  ↓
-Object Storage
+Object Storage (.webp)
+ ↓
+POST /uploads/{mediaId}/confirm (valida magic bytes, garante WebP + thumbnail .webp)
 ```
 
 PostgreSQL guarda somente a referência:
 
 ``` text
-storage_key
+storage_key (.webp)
 ```
 
 ## 7. Estrutura do código

@@ -44,13 +44,22 @@ public class MediaProcessingEventListener {
         byte[] rawBytes = objectStoragePort.download(event.storageKey());
         ImageProcessorPort.ProcessedImage processed = imageProcessorPort.process(rawBytes, event.mimeType());
 
-        // Overwrite original with EXIF-sanitized, compressed image
-        objectStoragePort.upload(event.storageKey(), processed.sanitizedBytes(), processed.mimeType());
+        String webpStorageKey = ConfirmUploadUseCase.toWebpKey(event.storageKey());
+        objectStoragePort.upload(webpStorageKey, processed.sanitizedBytes(), processed.mimeType());
 
-        // Upload thumbnail
-        String thumbnailKey = buildThumbnailKey(event.storageKey());
+        String thumbnailKey = ConfirmUploadUseCase.buildThumbnailKey(webpStorageKey);
         objectStoragePort.upload(thumbnailKey, processed.thumbnailBytes(), processed.mimeType());
 
+        if (!webpStorageKey.equals(event.storageKey())) {
+            try {
+                objectStoragePort.delete(event.storageKey());
+            } catch (Exception ex) {
+                log.warn("Failed to delete pre-conversion object {}: {}", event.storageKey(), ex.getMessage());
+            }
+        }
+
+        asset.setStorageKey(webpStorageKey);
+        asset.setDetectedMimeType(processed.mimeType());
         asset.markProcessed(
                 thumbnailKey,
                 processed.width(),
