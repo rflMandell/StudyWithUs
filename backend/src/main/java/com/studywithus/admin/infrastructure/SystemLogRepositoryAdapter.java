@@ -104,4 +104,12 @@ public class SystemLogRepositoryAdapter implements SystemLogRepository {
                 .map(SystemLogJpaEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    @Transactional
+    public int deleteOlderThan(Instant cutoff) {
+        return entityManager.createQuery("DELETE FROM SystemLogJpaEntity s WHERE s.timestamp < :cutoff")
+                .setParameter("cutoff", cutoff)
+                .executeUpdate();
+    }
 }

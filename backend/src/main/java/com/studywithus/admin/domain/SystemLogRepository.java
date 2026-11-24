@@ -19,4 +19,5 @@ public interface SystemLogRepository {
             int limitPlusOne
     );
     List<SystemLog> findByTraceIdOrderByTimestampAsc(String traceId);
+    int deleteOlderThan(Instant cutoff);
 }

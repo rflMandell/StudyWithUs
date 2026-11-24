@@ -68,6 +68,11 @@ logging:
     org.springframework.web: INFO
 
 app:
+  admin:
+    system-logs:
+      retention-enabled: ${SYSTEM_LOGS_RETENTION_ENABLED:true}
+      retention-days: ${SYSTEM_LOGS_RETENTION_DAYS:30}
+      retention-cron: ${SYSTEM_LOGS_RETENTION_CRON:0 0 3 * * *}
   feed:
     redis-enabled: ${FEED_REDIS_ENABLED:true}
     max-timeline-size: ${FEED_MAX_TIMELINE_SIZE:1000}

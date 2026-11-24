@@ -186,6 +186,34 @@ GET /actuator/metrics
 GET /actuator/metrics/{metricName}
 ```
 
+### Admin Backoffice (`/api/v1/admin/**`)
+
+Todos os endpoints abaixo exigem `globalRole` em `SUPPORT`, `ADMIN` ou `SUPER_ADMIN` (deny-by-default), com TTL de access token reduzido (5 min) e 2FA/TOTP opcional/exigido quando habilitado para `ADMIN` e `SUPER_ADMIN`.
+
+``` text
+GET    /admin/security/session
+POST   /admin/security/2fa/setup          (ADMIN, SUPER_ADMIN)
+POST   /admin/security/2fa/verify         (ADMIN, SUPER_ADMIN)
+DELETE /admin/security/2fa                (ADMIN, SUPER_ADMIN)
+
+GET    /admin/users                       (filtros: status, globalRole, plan, createdFrom, createdTo, search, page, size)
+GET    /admin/users/{id}                  (visão 360° da conta)
+POST   /admin/users/{id}/suspend          (ADMIN, SUPER_ADMIN; body: { reason })
+POST   /admin/users/{id}/reactivate       (ADMIN, SUPER_ADMIN; body: { reason })
+POST   /admin/users/{id}/revoke-sessions  (body: { reason })
+PATCH  /admin/users/{id}/role             (SUPER_ADMIN; body: { globalRole, reason })
+
+GET    /admin/system-logs                 (cursor, limit, level, module, traceId, userId, statusCode, from, to)
+GET    /admin/system-logs/{traceId}
+
+GET    /admin/audit-logs                  (actorId, action, targetType, targetId, from, to, page, size)
+GET    /admin/audit-logs/export           (ADMIN, SUPER_ADMIN; format=csv|json)
+
+GET    /admin/system/info
+GET    /admin/system/health
+GET    /admin/system/overview
+```
+
 ## 4. Status codes
 
 ``` text
@@ -207,6 +235,8 @@ GET /actuator/metrics/{metricName}
 ```
 
 Códigos de erro de resiliência e segurança da Fase 3: `STORAGE_CIRCUIT_OPEN` (503), `SSRF_BLOCKED` (400), `INVALID_FILENAME` (400), `INVALID_STORAGE_KEY` (400), `COSMETIC_LOCKED` (403).
+
+Códigos de erro do Sistema Administrativo (Sprints 26--31): `TOTP_REQUIRED` (401), `INVALID_TOTP_CODE` (401), `TOTP_VERIFICATION_REQUIRED` (403), `REASON_REQUIRED` (400), `SUPER_ADMIN_REQUIRED` (403), `CANNOT_SUSPEND_SELF` (400), `CANNOT_CHANGE_OWN_ROLE` (400), `INVALID_CURSOR` (400).
 
 ## 5. Error contract
 

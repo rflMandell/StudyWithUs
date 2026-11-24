@@ -47,6 +47,10 @@ management:
       enabled: false
 
 app:
+  admin:
+    system-logs:
+      retention-enabled: true
+      retention-days: 30
   feed:
     redis-enabled: false
   league:
