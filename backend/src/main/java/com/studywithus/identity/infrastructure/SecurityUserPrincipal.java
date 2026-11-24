@@ -1,7 +1,7 @@
 package com.studywithus.identity.infrastructure;
 
+import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.User;
-import com.studywithus.identity.domain.UserStatus;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,6 +19,7 @@ public class SecurityUserPrincipal implements UserDetails {
     private final String email;
     private final String password;
     private final boolean active;
+    private final GlobalRole globalRole;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public SecurityUserPrincipal(User user, String passwordHash) {
@@ -27,7 +28,8 @@ public class SecurityUserPrincipal implements UserDetails {
         this.email = user.getEmail();
         this.password = passwordHash;
         this.active = user.isActive();
-        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        this.globalRole = user.getEffectiveGlobalRole();
+        this.authorities = buildAuthorities(this.globalRole);
     }
 
     public SecurityUserPrincipal(UUID id, String username, String email) {
@@ -36,7 +38,18 @@ public class SecurityUserPrincipal implements UserDetails {
         this.email = email;
         this.password = "";
         this.active = true;
-        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        this.globalRole = GlobalRole.USER;
+        this.authorities = buildAuthorities(GlobalRole.USER);
+    }
+
+    private static Collection<? extends GrantedAuthority> buildAuthorities(GlobalRole role) {
+        if (role == null || role == GlobalRole.USER) {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        return List.of(
+                new SimpleGrantedAuthority("ROLE_" + role.name()),
+                new SimpleGrantedAuthority("ROLE_USER")
+        );
     }
 
     @Override

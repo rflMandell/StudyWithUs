@@ -29,6 +29,7 @@ security:
   jwt:
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     access-token-expiration: 3600000 # 1 hour for test
+    admin-access-token-expiration: 300000 # 5m for admin roles
     refresh-token-expiration: 86400000 # 1 day for test
 
 management:

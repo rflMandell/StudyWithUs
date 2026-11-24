@@ -27,6 +27,8 @@ public class User {
     private String studyGoal;
     private String bio;
     private UserStatus status;
+    @Builder.Default
+    private GlobalRole globalRole = GlobalRole.USER;
     private long lifetimePoints;
     private Instant createdAt;
     private Instant updatedAt;
@@ -34,6 +36,10 @@ public class User {
 
     public boolean isActive() {
         return status == UserStatus.ACTIVE && deletedAt == null;
+    }
+
+    public GlobalRole getEffectiveGlobalRole() {
+        return globalRole != null ? globalRole : GlobalRole.USER;
     }
 
     public void updateProfile(

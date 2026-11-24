@@ -17,6 +17,9 @@ import java.util.UUID;
 public class UserCredential {
     private UUID userId;
     private String passwordHash;
+    private String totpSecret;
+    private boolean totpEnabled;
+    private Instant totpVerifiedAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

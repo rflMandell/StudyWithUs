@@ -1,6 +1,7 @@
 package com.studywithus.identity.presentation;
 
 import com.studywithus.identity.application.AuthResult;
+import com.studywithus.identity.domain.GlobalRole;
 
 import java.util.UUID;
 
@@ -12,7 +13,8 @@ public record AuthResponse(
         UUID userId,
         String username,
         String email,
-        String name
+        String name,
+        GlobalRole globalRole
 ) {
     public static AuthResponse from(AuthResult result) {
         return new AuthResponse(
@@ -23,7 +25,8 @@ public record AuthResponse(
                 result.userId(),
                 result.username(),
                 result.email(),
-                result.name()
+                result.name(),
+                result.globalRole()
         );
     }
 }

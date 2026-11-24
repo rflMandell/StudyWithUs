@@ -2,6 +2,7 @@ package com.studywithus.identity.application;
 
 import com.studywithus.gamification.domain.UserBadge;
 import com.studywithus.gamification.domain.UserLevel;
+import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserStatus;
 
@@ -23,6 +24,7 @@ public record UserProfileResult(
         String studyGoal,
         String bio,
         UserStatus status,
+        GlobalRole globalRole,
         long currentPoints,
         long lifetimePoints,
         int activeCommunitiesCount,
@@ -83,6 +85,7 @@ public record UserProfileResult(
                 user.getStudyGoal(),
                 user.getBio(),
                 user.getStatus(),
+                user.getEffectiveGlobalRole(),
                 currentPoints,
                 user.getLifetimePoints(),
                 activeCommunitiesCount,

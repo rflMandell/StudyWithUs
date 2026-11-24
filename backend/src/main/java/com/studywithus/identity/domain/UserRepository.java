@@ -1,5 +1,7 @@
 package com.studywithus.identity.domain;
 
+import com.studywithus.shared.domain.PagedResult;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +13,7 @@ public interface UserRepository {
     Optional<User> findByEmail(String email);
     Optional<User> findByUsernameOrEmail(String usernameOrEmail);
     List<User> findAllById(Iterable<UUID> ids);
+    PagedResult<User> findAll(int page, int size);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 

@@ -22,6 +22,7 @@ public class LoginUseCase implements UseCase<LoginCommand, AuthResult> {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordHasher passwordHasher;
     private final TokenServicePort tokenService;
+    private final TotpPort totpPort;
 
     @Override
     @Transactional
@@ -42,8 +43,21 @@ public class LoginUseCase implements UseCase<LoginCommand, AuthResult> {
             throw new DomainException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid username/email or password");
         }
 
+        boolean twoFactorVerified = false;
+        if (user.getEffectiveGlobalRole().requiresTwoFactorEligibility() && credential.isTotpEnabled()) {
+            if (command.totpCode() == null || command.totpCode().isBlank()) {
+                throw new DomainException(HttpStatus.UNAUTHORIZED, "TOTP_REQUIRED", "Two-factor authentication code is required for this account");
+            }
+            if (totpPort == null || !totpPort.verifyCode(credential.getTotpSecret(), command.totpCode())) {
+                throw new DomainException(HttpStatus.UNAUTHORIZED, "INVALID_TOTP_CODE", "Invalid two-factor authentication code");
+            }
+            twoFactorVerified = true;
+        }
+
         Instant now = Instant.now();
-        String accessToken = tokenService.generateAccessToken(user);
+        String accessToken = twoFactorVerified
+                ? tokenService.generateAccessToken(user, true)
+                : tokenService.generateAccessToken(user);
         String rawRefreshToken = tokenService.generateRefreshToken();
         String tokenHash = tokenService.hashToken(rawRefreshToken);
         Instant refreshTokenExpiresAt = now.plusSeconds(tokenService.getRefreshTokenExpirationSeconds());
@@ -57,14 +71,19 @@ public class LoginUseCase implements UseCase<LoginCommand, AuthResult> {
                 .build();
         refreshTokenRepository.save(refreshToken);
 
+        long expiresIn = user.getEffectiveGlobalRole().isAdminAccess()
+                ? tokenService.getAccessTokenExpirationSeconds(user)
+                : tokenService.getAccessTokenExpirationSeconds();
+
         return AuthResult.bearer(
                 accessToken,
                 rawRefreshToken,
-                tokenService.getAccessTokenExpirationSeconds(),
+                expiresIn,
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getName()
+                user.getName(),
+                user.getEffectiveGlobalRole()
         );
     }
 }

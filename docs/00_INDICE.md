@@ -88,6 +88,13 @@ organizada de produto e engenharia.
     -   sprints da Fase 3 (Imagens, Feed Materializado, Níveis/XP, Ligas, Analytics de Estudo)
     -   estratégia e testes por sprint
     -   Definition of Done
+13. **13 --- Roadmap, Sprints e Critérios de Aceitação (Sistema Administrativo)**
+    -   RBAC global e segurança do backoffice
+    -   gestão de contas da plataforma
+    -   logs do sistema principal com correlação
+    -   auditoria imutável das ações dos admins (`audit_logs`)
+    -   informações do sistema e saúde da infraestrutura
+    -   Definition of Done
 
 ## Hierarquia de autoridade
 

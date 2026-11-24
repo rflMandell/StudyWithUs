@@ -63,14 +63,19 @@ public class RefreshTokenUseCase implements UseCase<RefreshTokenCommand, AuthRes
                 .build();
         refreshTokenRepository.save(newRefreshToken);
 
+        long expiresIn = user.getEffectiveGlobalRole().isAdminAccess()
+                ? tokenService.getAccessTokenExpirationSeconds(user)
+                : tokenService.getAccessTokenExpirationSeconds();
+
         return AuthResult.bearer(
                 newAccessToken,
                 newRawRefreshToken,
-                tokenService.getAccessTokenExpirationSeconds(),
+                expiresIn,
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getName()
+                user.getName(),
+                user.getEffectiveGlobalRole()
         );
     }
 }

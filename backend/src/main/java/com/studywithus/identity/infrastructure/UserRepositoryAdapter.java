@@ -3,7 +3,11 @@ package com.studywithus.identity.infrastructure;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserCredential;
 import com.studywithus.identity.domain.UserRepository;
+import com.studywithus.shared.domain.PagedResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -48,6 +52,15 @@ public class UserRepositoryAdapter implements UserRepository {
         return springDataUserRepository.findAllById(ids).stream()
                 .map(UserJpaEntity::toDomain)
                 .toList();
+    }
+
+    @Override
+    public PagedResult<User> findAll(int page, int size) {
+        Page<UserJpaEntity> result = springDataUserRepository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        List<User> users = result.getContent().stream().map(UserJpaEntity::toDomain).toList();
+        return PagedResult.of(users, result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.studywithus.identity.application;
 
+import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.RefreshToken;
 import com.studywithus.identity.domain.RefreshTokenRepository;
 import com.studywithus.identity.domain.User;
@@ -50,6 +51,7 @@ public class RegisterUserUseCase implements UseCase<RegisterUserCommand, AuthRes
                 .studyGoal(command.studyGoal())
                 .bio(command.bio())
                 .status(UserStatus.ACTIVE)
+                .globalRole(GlobalRole.USER)
                 .lifetimePoints(0)
                 .createdAt(now)
                 .updatedAt(now)
@@ -79,14 +81,19 @@ public class RegisterUserUseCase implements UseCase<RegisterUserCommand, AuthRes
                 .build();
         refreshTokenRepository.save(refreshToken);
 
+        long expiresIn = savedUser.getEffectiveGlobalRole().isAdminAccess()
+                ? tokenService.getAccessTokenExpirationSeconds(savedUser)
+                : tokenService.getAccessTokenExpirationSeconds();
+
         return AuthResult.bearer(
                 accessToken,
                 rawRefreshToken,
-                tokenService.getAccessTokenExpirationSeconds(),
+                expiresIn,
                 savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getEmail(),
-                savedUser.getName()
+                savedUser.getName(),
+                savedUser.getEffectiveGlobalRole()
         );
     }
 }

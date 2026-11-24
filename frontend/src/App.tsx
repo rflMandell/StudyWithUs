@@ -2,12 +2,14 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CommunitiesPage } from './pages/CommunitiesPage';
 import { CommunityDetailPage } from './pages/CommunityDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { RealtimeNotificationToast } from './components/RealtimeNotificationToast';
 
 export const App: React.FC = () => {
@@ -56,6 +58,14 @@ export const App: React.FC = () => {
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/*"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboardPage />
+              </AdminProtectedRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

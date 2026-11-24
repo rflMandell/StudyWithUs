@@ -10,9 +10,15 @@ public record LoginRequest(
         @NotBlank(message = "Password is required")
         String password,
 
-        String deviceId
+        String deviceId,
+
+        String totpCode
 ) {
+    public LoginRequest(String usernameOrEmail, String password, String deviceId) {
+        this(usernameOrEmail, password, deviceId, null);
+    }
+
     public LoginCommand toCommand() {
-        return new LoginCommand(usernameOrEmail, password, deviceId);
+        return new LoginCommand(usernameOrEmail, password, deviceId, totpCode);
     }
 }

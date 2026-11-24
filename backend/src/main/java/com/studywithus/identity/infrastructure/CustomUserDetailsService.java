@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + usernameOrEmail));
 
         UserCredential credential = userRepository.findCredentialByUserId(user.getId())
-                .orElse(new UserCredential(user.getId(), "", null, null));
+                .orElse(UserCredential.builder().userId(user.getId()).passwordHash("").build());
 
         return new SecurityUserPrincipal(user, credential.getPasswordHash());
     }

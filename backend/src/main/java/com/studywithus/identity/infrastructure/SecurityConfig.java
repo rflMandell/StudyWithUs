@@ -76,6 +76,7 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/error"
                         ).permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("SUPPORT", "ADMIN", "SUPER_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

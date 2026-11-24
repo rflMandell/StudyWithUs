@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { LogIn, BookOpen } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AlertError } from '../components/AlertError';
+import { ApiError } from '../types/auth';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +12,8 @@ export const LoginPage: React.FC = () => {
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [requiresTotp, setRequiresTotp] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,10 +31,16 @@ export const LoginPage: React.FC = () => {
         usernameOrEmail: usernameOrEmail.trim(),
         password,
         deviceId: 'web-browser',
+        ...(totpCode.trim() ? { totpCode: totpCode.trim() } : {}),
       });
       navigate('/');
-    } catch {
-      // Error handled by AuthContext
+    } catch (err) {
+      if (err instanceof AxiosError && err.response?.data) {
+        const apiErr = err.response.data as ApiError;
+        if (apiErr.code === 'TOTP_REQUIRED' || apiErr.code === 'INVALID_TOTP_CODE') {
+          setRequiresTotp(true);
+        }
+      }
     }
   };
 
@@ -75,6 +85,22 @@ export const LoginPage: React.FC = () => {
               disabled={isLoading}
             />
           </div>
+
+          {requiresTotp && (
+            <div className="form-group">
+              <label htmlFor="totpCode">Código 2FA (TOTP)</label>
+              <input
+                id="totpCode"
+                type="text"
+                className="form-control"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                placeholder="000000"
+                autoComplete="one-time-code"
+                disabled={isLoading}
+              />
+            </div>
+          )}
 
           <button
             type="submit"

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, LogOut, Award, User as UserIcon, Users } from 'lucide-react';
+import { BookOpen, LogOut, Award, User as UserIcon, Users, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { isAdminRole } from '../services/adminService';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -56,6 +57,22 @@ export const Navbar: React.FC = () => {
                 <UserIcon size={16} />
                 <span>Perfil</span>
               </Link>
+              {isAdminRole(user.globalRole) && (
+                <Link
+                  to="/admin"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '0.925rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    color: location.pathname.startsWith('/admin') ? 'var(--primary)' : 'var(--text-muted)',
+                  }}
+                >
+                  <ShieldCheck size={16} />
+                  <span>Admin</span>
+                </Link>
+              )}
             </nav>
           )}
         </div>

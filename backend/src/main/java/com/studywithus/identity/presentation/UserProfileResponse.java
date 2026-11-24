@@ -2,6 +2,7 @@ package com.studywithus.identity.presentation;
 
 import com.studywithus.gamification.presentation.UserBadgeResponse;
 import com.studywithus.identity.application.UserProfileResult;
+import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.UserStatus;
 
 import java.time.Instant;
@@ -21,6 +22,7 @@ public record UserProfileResponse(
         String studyGoal,
         String bio,
         UserStatus status,
+        GlobalRole globalRole,
         long currentPoints,
         long lifetimePoints,
         int activeCommunitiesCount,
@@ -68,6 +70,7 @@ public record UserProfileResponse(
                 result.studyGoal(),
                 result.bio(),
                 result.status(),
+                includePrivateFields ? result.globalRole() : null,
                 result.currentPoints(),
                 result.lifetimePoints(),
                 result.activeCommunitiesCount(),

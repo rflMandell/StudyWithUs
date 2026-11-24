@@ -41,16 +41,20 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         // Target sensitive endpoints
         int maxRequests = 0;
         int windowSeconds = 60;
+        String bucket = method + ":" + path;
 
         if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/login")) {
             maxRequests = 20; // 20 login attempts per minute per IP
         } else if ("POST".equalsIgnoreCase(method) && path.endsWith("/api/v1/auth/register")) {
             maxRequests = 15; // 15 registrations per minute per IP
+        } else if (path.startsWith("/api/v1/admin")) {
+            maxRequests = 60; // 60 admin requests per minute per IP
+            bucket = "ADMIN";
         }
 
         if (maxRequests > 0) {
             String clientIp = getClientIp(request);
-            String rateLimitKey = method + ":" + path + ":" + clientIp;
+            String rateLimitKey = bucket + ":" + clientIp;
 
             boolean allowed = rateLimitingService.tryAcquire(rateLimitKey, maxRequests, windowSeconds);
             if (!allowed) {

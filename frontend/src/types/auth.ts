@@ -1,3 +1,5 @@
+export type GlobalRole = 'USER' | 'SUPPORT' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface UserBadge {
   badgeId: string;
   name: string;
@@ -18,6 +20,7 @@ export interface User {
   studyGoal?: string;
   bio?: string;
   status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+  globalRole?: GlobalRole;
   lifetimePoints: number;
   currentPoints?: number;
   activeCommunitiesCount?: number;
@@ -48,6 +51,7 @@ export interface LoginCredentials {
   usernameOrEmail: string;
   password: string;
   deviceId?: string;
+  totpCode?: string;
 }
 
 export interface RegisterData {
@@ -72,6 +76,7 @@ export interface AuthResponse {
   username: string;
   email: string;
   name: string;
+  globalRole?: GlobalRole;
 }
 
 export interface ApiError {

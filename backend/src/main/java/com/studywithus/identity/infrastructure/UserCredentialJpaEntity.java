@@ -30,6 +30,16 @@ public class UserCredentialJpaEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "totp_secret", length = 64)
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    @Builder.Default
+    private boolean totpEnabled = false;
+
+    @Column(name = "totp_verified_at")
+    private Instant totpVerifiedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -40,6 +50,9 @@ public class UserCredentialJpaEntity {
         return UserCredential.builder()
                 .userId(userId)
                 .passwordHash(passwordHash)
+                .totpSecret(totpSecret)
+                .totpEnabled(totpEnabled)
+                .totpVerifiedAt(totpVerifiedAt)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .build();
@@ -49,6 +62,9 @@ public class UserCredentialJpaEntity {
         return UserCredentialJpaEntity.builder()
                 .userId(credential.getUserId())
                 .passwordHash(credential.getPasswordHash())
+                .totpSecret(credential.getTotpSecret())
+                .totpEnabled(credential.isTotpEnabled())
+                .totpVerifiedAt(credential.getTotpVerifiedAt())
                 .createdAt(credential.getCreatedAt() != null ? credential.getCreatedAt() : Instant.now())
                 .updatedAt(credential.getUpdatedAt() != null ? credential.getUpdatedAt() : Instant.now())
                 .build();

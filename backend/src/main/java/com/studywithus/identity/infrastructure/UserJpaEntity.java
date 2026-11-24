@@ -1,5 +1,6 @@
 package com.studywithus.identity.infrastructure;
 
+import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserStatus;
 import jakarta.persistence.Column;
@@ -64,6 +65,11 @@ public class UserJpaEntity {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "global_role", nullable = false, length = 20)
+    @Builder.Default
+    private GlobalRole globalRole = GlobalRole.USER;
+
     @Column(name = "lifetime_points", nullable = false)
     private long lifetimePoints;
 
@@ -89,6 +95,7 @@ public class UserJpaEntity {
                 .studyGoal(studyGoal)
                 .bio(bio)
                 .status(status)
+                .globalRole(globalRole != null ? globalRole : GlobalRole.USER)
                 .lifetimePoints(lifetimePoints)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -109,6 +116,7 @@ public class UserJpaEntity {
                 .studyGoal(user.getStudyGoal())
                 .bio(user.getBio())
                 .status(user.getStatus())
+                .globalRole(user.getEffectiveGlobalRole())
                 .lifetimePoints(user.getLifetimePoints())
                 .createdAt(user.getCreatedAt() != null ? user.getCreatedAt() : Instant.now())
                 .updatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt() : Instant.now())
