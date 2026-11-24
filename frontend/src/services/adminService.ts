@@ -149,6 +149,71 @@ export interface AdminAuditLogFilters {
   to?: string;
 }
 
+export interface SystemInfo {
+  applicationName: string;
+  version: string;
+  commitSha: string;
+  activeProfiles: string[];
+  uptimeSeconds: number;
+  javaVersion: string;
+  jvmName: string;
+  flyway: {
+    enabled: boolean;
+    currentVersion: string;
+    appliedMigrations: number;
+    pendingMigrations: number;
+  };
+}
+
+export interface SystemHealth {
+  overallStatus: 'UP' | 'DEGRADED' | 'DOWN' | string;
+  checkedAt: string;
+  database: {
+    status: string;
+    latencyMs: number;
+    activeConnections: number;
+    idleConnections: number;
+    totalConnections: number;
+    maxPoolSize: number;
+    error?: string;
+  };
+  redis: {
+    status: string;
+    latencyMs: number;
+    usedMemory?: string;
+    cachedKeys?: number;
+    error?: string;
+  };
+  objectStorage: {
+    status: string;
+    provider: string;
+    bucketOrPath: string;
+    latencyMs: number;
+    error?: string;
+  };
+  outboxAndJobs: {
+    status: string;
+    pendingOutboxEvents: number;
+    failedOutboxEvents: number;
+    recentJobs: Array<{
+      jobName: string;
+      status: string;
+      lastRunAt?: string;
+    }>;
+  };
+}
+
+export interface SystemOverview {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  newUsersLast24h: number;
+  activeCommunities: number;
+  checkinsLast24h: number;
+  activePremiumSubscriptions: number;
+  pendingReports: number;
+}
+
 export interface PagedAdminUsers {
   content: AdminUserSummary[];
   page: number;
@@ -265,6 +330,21 @@ export const adminService = {
       params,
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  async getSystemInfo(): Promise<SystemInfo> {
+    const response = await api.get<SystemInfo>('/admin/system/info');
+    return response.data;
+  },
+
+  async getSystemHealth(): Promise<SystemHealth> {
+    const response = await api.get<SystemHealth>('/admin/system/health');
+    return response.data;
+  },
+
+  async getSystemOverview(): Promise<SystemOverview> {
+    const response = await api.get<SystemOverview>('/admin/system/overview');
     return response.data;
   },
 };

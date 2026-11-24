@@ -13,6 +13,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AdminSystemLogsPage } from './pages/AdminSystemLogsPage';
 import { AdminAuditLogsPage } from './pages/AdminAuditLogsPage';
+import { AdminSystemInfoPage } from './pages/AdminSystemInfoPage';
 import { RealtimeNotificationToast } from './components/RealtimeNotificationToast';
 
 export const App: React.FC = () => {
@@ -92,6 +93,14 @@ export const App: React.FC = () => {
             element={
               <AdminProtectedRoute>
                 <AdminAuditLogsPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/system"
+            element={
+              <AdminProtectedRoute>
+                <AdminSystemInfoPage />
               </AdminProtectedRoute>
             }
           />

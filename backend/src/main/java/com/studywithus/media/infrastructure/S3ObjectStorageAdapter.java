@@ -228,4 +228,15 @@ public class S3ObjectStorageAdapter implements ObjectStoragePort {
         String base = publicEndpoint.endsWith("/") ? publicEndpoint.substring(0, publicEndpoint.length() - 1) : publicEndpoint;
         return base + "/" + bucket + "/" + storageKey;
     }
+
+    @Override
+    public StorageHealth checkHealth() {
+        long start = System.currentTimeMillis();
+        try {
+            s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
+            return new StorageHealth(true, "S3", bucket, System.currentTimeMillis() - start, null);
+        } catch (Exception e) {
+            return new StorageHealth(false, "S3", bucket, System.currentTimeMillis() - start, e.getMessage());
+        }
+    }
 }

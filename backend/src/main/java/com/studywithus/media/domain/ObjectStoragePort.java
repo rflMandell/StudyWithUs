@@ -25,6 +25,18 @@ public interface ObjectStoragePort {
 
     String getPublicUrl(String storageKey);
 
+    default StorageHealth checkHealth() {
+        return new StorageHealth(true, "LOCAL", "local", 0L, null);
+    }
+
+    record StorageHealth(
+            boolean up,
+            String provider,
+            String bucketOrPath,
+            long latencyMs,
+            String error
+    ) {}
+
     record PresignedUploadResult(
             String presignedUrl,
             Instant expiresAt,

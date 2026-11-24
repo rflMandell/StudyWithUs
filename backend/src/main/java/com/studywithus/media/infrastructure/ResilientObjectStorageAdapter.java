@@ -77,6 +77,15 @@ public class ResilientObjectStorageAdapter implements ObjectStoragePort {
         return delegate.getPublicUrl(storageKey);
     }
 
+    @Override
+    public StorageHealth checkHealth() {
+        StorageHealth base = delegate.checkHealth();
+        if (circuitBreaker.getState() == CircuitBreaker.State.OPEN) {
+            return new StorageHealth(false, base.provider(), base.bucketOrPath(), base.latencyMs(), "Circuit breaker OPEN");
+        }
+        return base;
+    }
+
     public CircuitBreaker.State getCircuitState() {
         return circuitBreaker.getState();
     }

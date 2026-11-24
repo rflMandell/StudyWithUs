@@ -25,7 +25,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { path: '/admin/users', label: 'Contas da Plataforma', icon: Users, enabled: true },
     { path: '/admin/logs', label: 'Logs do Sistema', icon: FileText, enabled: true },
     { path: '/admin/audit', label: 'Auditoria', icon: ClipboardList, enabled: true },
-    { path: '/admin/system', label: 'Info do Sistema', icon: Activity, enabled: false, tag: 'Sprint 30' },
+    { path: '/admin/system', label: 'Info do Sistema', icon: Activity, enabled: true },
   ];
 
   return (
@@ -73,32 +73,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname === item.path;
-                if (!item.enabled) {
-                  return (
-                    <div
-                      key={item.path}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.6rem 0.75rem',
-                        borderRadius: '8px',
-                        color: 'var(--text-muted)',
-                        opacity: 0.65,
-                        fontSize: '0.875rem',
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Icon size={16} />
-                        {item.label}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', background: 'var(--bg)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
-                        {item.tag}
-                      </span>
-                    </div>
-                  );
-                }
-
                 return (
                   <Link
                     key={item.path}
