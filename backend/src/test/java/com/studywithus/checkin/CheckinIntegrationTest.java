@@ -9,6 +9,7 @@ import com.studywithus.community.presentation.CreateCommunityRequest;
 import com.studywithus.identity.presentation.AuthResponse;
 import com.studywithus.identity.presentation.RegisterRequest;
 import com.studywithus.media.domain.MediaPurpose;
+import com.studywithus.media.presentation.MediaAssetResponse;
 import com.studywithus.media.presentation.RequestUploadUrlRequest;
 import com.studywithus.media.presentation.UploadUrlResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -168,9 +169,12 @@ class CheckinIntegrationTest {
                         .content(pngBytes))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/v1/uploads/" + uploadUrl.mediaId() + "/confirm")
+        MvcResult confirmRes = mockMvc.perform(post("/api/v1/uploads/" + uploadUrl.mediaId() + "/confirm")
                         .header("Authorization", "Bearer " + authorToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        MediaAssetResponse confirmedAsset = objectMapper.readValue(confirmRes.getResponse().getContentAsString(), MediaAssetResponse.class);
+        uploadedMediaKey = confirmedAsset.storageKey();
 
         CreateCheckinRequest request = new CreateCheckinRequest(
                 communityId,
