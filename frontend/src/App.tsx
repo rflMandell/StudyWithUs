@@ -11,6 +11,7 @@ import { CommunityDetailPage } from './pages/CommunityDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AdminSystemLogsPage } from './pages/AdminSystemLogsPage';
 import { RealtimeNotificationToast } from './components/RealtimeNotificationToast';
 
 export const App: React.FC = () => {
@@ -74,6 +75,14 @@ export const App: React.FC = () => {
             element={
               <AdminProtectedRoute>
                 <AdminUsersPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/logs"
+            element={
+              <AdminProtectedRoute>
+                <AdminSystemLogsPage />
               </AdminProtectedRoute>
             }
           />

@@ -82,6 +82,38 @@ export interface AdminUserFilters {
   search?: string;
 }
 
+export interface SystemLogItem {
+  id: string;
+  timestamp: string;
+  level: 'INFO' | 'WARN' | 'ERROR' | string;
+  module: string;
+  traceId: string;
+  requestId?: string;
+  userId?: string;
+  httpMethod?: string;
+  path?: string;
+  statusCode?: number;
+  durationMs?: number;
+  message: string;
+  context?: string;
+}
+
+export interface SystemLogCursorPage {
+  items: SystemLogItem[];
+  nextCursor?: string;
+  hasNext: boolean;
+}
+
+export interface SystemLogFilters {
+  level?: string;
+  module?: string;
+  traceId?: string;
+  userId?: string;
+  statusCode?: number;
+  cursor?: string;
+  limit?: number;
+}
+
 export interface PagedAdminUsers {
   content: AdminUserSummary[];
   page: number;
@@ -153,6 +185,24 @@ export const adminService = {
 
   async changeRole(userId: string, globalRole: GlobalRole, reason: string): Promise<AdminUserSummary> {
     const response = await api.patch<AdminUserSummary>(`/admin/users/${userId}/role`, { globalRole, reason });
+    return response.data;
+  },
+
+  async listSystemLogs(filters: SystemLogFilters = {}): Promise<SystemLogCursorPage> {
+    const params: Record<string, string | number> = { limit: filters.limit ?? 30 };
+    if (filters.level) params.level = filters.level;
+    if (filters.module?.trim()) params.module = filters.module.trim();
+    if (filters.traceId?.trim()) params.traceId = filters.traceId.trim();
+    if (filters.userId?.trim()) params.userId = filters.userId.trim();
+    if (filters.statusCode) params.statusCode = filters.statusCode;
+    if (filters.cursor) params.cursor = filters.cursor;
+
+    const response = await api.get<SystemLogCursorPage>('/admin/system-logs', { params });
+    return response.data;
+  },
+
+  async getTraceTimeline(traceId: string): Promise<SystemLogItem[]> {
+    const response = await api.get<SystemLogItem[]>(`/admin/system-logs/${encodeURIComponent(traceId)}`);
     return response.data;
   },
 };

@@ -23,7 +23,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/admin', label: 'Visão Geral & Segurança', icon: ShieldCheck, enabled: true },
     { path: '/admin/users', label: 'Contas da Plataforma', icon: Users, enabled: true },
-    { path: '/admin/logs', label: 'Logs do Sistema', icon: FileText, enabled: false, tag: 'Sprint 28' },
+    { path: '/admin/logs', label: 'Logs do Sistema', icon: FileText, enabled: true },
     { path: '/admin/audit', label: 'Auditoria', icon: ClipboardList, enabled: false, tag: 'Sprint 29' },
     { path: '/admin/system', label: 'Info do Sistema', icon: Activity, enabled: false, tag: 'Sprint 30' },
   ];

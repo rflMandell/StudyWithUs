@@ -1,10 +1,14 @@
 package com.studywithus.shared.presentation;
 
+import com.studywithus.shared.application.SystemLogIngestionPort;
 import com.studywithus.shared.domain.DomainException;
+import com.studywithus.shared.infrastructure.logging.SensitiveDataMasker;
 import com.studywithus.shared.infrastructure.web.TraceIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,16 +18,25 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final ObjectProvider<SystemLogIngestionPort> systemLogIngestionPortProvider;
 
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ApiErrorResponse> handleDomainException(DomainException ex, HttpServletRequest request) {
         String traceId = getTraceId();
-        log.warn("Domain exception [traceId={}]: status={} code={} msg={}", traceId, ex.getStatus(), ex.getCode(), ex.getMessage());
+        String safeMessage = SensitiveDataMasker.mask(ex.getMessage());
+        log.warn("Domain exception [traceId={}]: status={} code={} msg={}", traceId, ex.getStatus(), ex.getCode(), safeMessage);
+        recordExceptionLog("WARN", ex.getStatus().value(), ex.getCode(), safeMessage, ex, request, false);
 
         ApiErrorResponse body = ApiErrorResponse.of(
                 ex.getStatus().value(),
@@ -102,7 +115,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpectedException(Exception ex, HttpServletRequest request) {
         String traceId = getTraceId();
-        log.error("Unhandled exception [traceId={}]: {}", traceId, ex.getMessage(), ex);
+        String safeMessage = SensitiveDataMasker.mask(ex.getMessage());
+        log.error("Unhandled exception [traceId={}]: {}", traceId, safeMessage, ex);
+        recordExceptionLog("ERROR", HttpStatus.INTERNAL_SERVER_ERROR.value(), "INTERNAL_SERVER_ERROR", safeMessage, ex, request, true);
 
         ApiErrorResponse body = ApiErrorResponse.of(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -112,6 +127,52 @@ public class GlobalExceptionHandler {
                 traceId
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+
+    private void recordExceptionLog(
+            String level,
+            int statusCode,
+            String errorCode,
+            String message,
+            Throwable ex,
+            HttpServletRequest request,
+            boolean includeStackTrace
+    ) {
+        String traceId = getTraceId();
+        String requestId = MDC.get(TraceIdFilter.REQUEST_ID_MDC_KEY);
+        String module = TraceIdFilter.resolveModule(request.getRequestURI());
+        String userIdRaw = MDC.get(TraceIdFilter.USER_ID_MDC_KEY);
+        UUID userId = null;
+        if (userIdRaw != null && !userIdRaw.isBlank()) {
+            try {
+                userId = UUID.fromString(userIdRaw);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        String stackSummary = includeStackTrace
+                ? Arrays.stream(ex.getStackTrace()).limit(8).map(StackTraceElement::toString).collect(Collectors.joining("\n"))
+                : null;
+
+        Map<String, Object> context = stackSummary != null
+                ? Map.of("errorCode", errorCode, "exception", ex.getClass().getName(), "stackTrace", stackSummary)
+                : Map.of("errorCode", errorCode, "exception", ex.getClass().getName());
+
+        final UUID finalUserId = userId;
+        systemLogIngestionPortProvider.ifAvailable(ingestion -> ingestion.recordAsync(
+                Instant.now(),
+                level,
+                module,
+                traceId,
+                requestId,
+                finalUserId,
+                request.getMethod(),
+                request.getRequestURI(),
+                statusCode,
+                null,
+                errorCode + ": " + (message != null ? message : ""),
+                context
+        ));
     }
 
     private String getTraceId() {
