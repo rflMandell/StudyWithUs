@@ -114,6 +114,41 @@ export interface SystemLogFilters {
   limit?: number;
 }
 
+export interface AdminAuditLogItem {
+  id: string;
+  actorId?: string;
+  actorRole?: string;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  reason?: string;
+  beforeState?: string;
+  afterState?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  requestId?: string;
+  metadata?: string;
+  createdAt: string;
+}
+
+export interface PagedAdminAuditLogs {
+  content: AdminAuditLogItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+export interface AdminAuditLogFilters {
+  actorId?: string;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  from?: string;
+  to?: string;
+}
+
 export interface PagedAdminUsers {
   content: AdminUserSummary[];
   page: number;
@@ -203,6 +238,33 @@ export const adminService = {
 
   async getTraceTimeline(traceId: string): Promise<SystemLogItem[]> {
     const response = await api.get<SystemLogItem[]>(`/admin/system-logs/${encodeURIComponent(traceId)}`);
+    return response.data;
+  },
+
+  async listAuditLogs(page = 0, size = 20, filters: AdminAuditLogFilters = {}): Promise<PagedAdminAuditLogs> {
+    const params: Record<string, string | number> = { page, size };
+    if (filters.actorId?.trim()) params.actorId = filters.actorId.trim();
+    if (filters.action?.trim()) params.action = filters.action.trim();
+    if (filters.targetType?.trim()) params.targetType = filters.targetType.trim();
+    if (filters.targetId?.trim()) params.targetId = filters.targetId.trim();
+    if (filters.from) params.from = filters.from;
+    if (filters.to) params.to = filters.to;
+
+    const response = await api.get<PagedAdminAuditLogs>('/admin/audit-logs', { params });
+    return response.data;
+  },
+
+  async exportAuditLogs(format: 'csv' | 'json', filters: AdminAuditLogFilters = {}): Promise<Blob> {
+    const params: Record<string, string> = { format };
+    if (filters.actorId?.trim()) params.actorId = filters.actorId.trim();
+    if (filters.action?.trim()) params.action = filters.action.trim();
+    if (filters.targetType?.trim()) params.targetType = filters.targetType.trim();
+    if (filters.targetId?.trim()) params.targetId = filters.targetId.trim();
+
+    const response = await api.get<Blob>('/admin/audit-logs/export', {
+      params,
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

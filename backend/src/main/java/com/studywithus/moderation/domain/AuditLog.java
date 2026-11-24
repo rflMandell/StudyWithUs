@@ -17,9 +17,16 @@ import java.util.UUID;
 public class AuditLog {
     private UUID id;
     private UUID actorId;
+    private String actorRole;
     private String action;
     private String targetType;
     private UUID targetId;
+    private String reason;
+    private String beforeState;
+    private String afterState;
+    private String ipAddress;
+    private String userAgent;
+    private String requestId;
     private String metadata;
     private Instant createdAt;
 

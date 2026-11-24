@@ -1,14 +1,10 @@
 package com.studywithus.admin.application;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studywithus.identity.domain.GlobalRole;
 import com.studywithus.identity.domain.RefreshTokenRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.identity.domain.UserStatus;
-import com.studywithus.moderation.domain.AuditLog;
-import com.studywithus.moderation.domain.AuditLogRepository;
 import com.studywithus.shared.domain.DomainException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,8 +21,7 @@ public class AdminAccountManagementUseCase {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final AuditLogRepository auditLogRepository;
-    private final ObjectMapper objectMapper;
+    private final AdminAuditService adminAuditService;
 
     @Transactional
     public User suspendUser(UUID actorId, UUID targetUserId, String reason) {
@@ -44,23 +39,32 @@ public class AdminAccountManagementUseCase {
         }
 
         UserStatus previousStatus = target.getStatus();
+        Map<String, Object> beforeState = Map.of(
+                "status", previousStatus.name(),
+                "globalRole", target.getEffectiveGlobalRole().name()
+        );
+
         target.setStatus(UserStatus.SUSPENDED);
         target.setUpdatedAt(Instant.now());
         User saved = userRepository.save(target);
 
         refreshTokenRepository.revokeAllByUserId(targetUserId);
 
-        auditLogRepository.save(AuditLog.create(
+        Map<String, Object> afterState = Map.of(
+                "status", saved.getStatus().name(),
+                "globalRole", saved.getEffectiveGlobalRole().name(),
+                "sessionsRevoked", true
+        );
+
+        adminAuditService.record(
                 actorId,
                 "USER_SUSPENDED",
                 "USER",
                 targetUserId,
-                toJson(Map.of(
-                        "reason", cleanReason,
-                        "previousStatus", previousStatus.name(),
-                        "newStatus", UserStatus.SUSPENDED.name()
-                ))
-        ));
+                cleanReason,
+                beforeState,
+                afterState
+        );
         return saved;
     }
 
@@ -70,39 +74,49 @@ public class AdminAccountManagementUseCase {
         User target = requireUser(targetUserId);
 
         UserStatus previousStatus = target.getStatus();
+        Map<String, Object> beforeState = Map.of(
+                "status", previousStatus.name(),
+                "globalRole", target.getEffectiveGlobalRole().name()
+        );
+
         target.setStatus(UserStatus.ACTIVE);
         target.setDeletedAt(null);
         target.setUpdatedAt(Instant.now());
         User saved = userRepository.save(target);
 
-        auditLogRepository.save(AuditLog.create(
+        Map<String, Object> afterState = Map.of(
+                "status", saved.getStatus().name(),
+                "globalRole", saved.getEffectiveGlobalRole().name()
+        );
+
+        adminAuditService.record(
                 actorId,
                 "USER_REACTIVATED",
                 "USER",
                 targetUserId,
-                toJson(Map.of(
-                        "reason", cleanReason,
-                        "previousStatus", previousStatus.name(),
-                        "newStatus", UserStatus.ACTIVE.name()
-                ))
-        ));
+                cleanReason,
+                beforeState,
+                afterState
+        );
         return saved;
     }
 
     @Transactional
     public void revokeUserSessions(UUID actorId, UUID targetUserId, String reason) {
         String cleanReason = requireReason(reason);
-        requireUser(targetUserId);
+        User target = requireUser(targetUserId);
 
         refreshTokenRepository.revokeAllByUserId(targetUserId);
 
-        auditLogRepository.save(AuditLog.create(
+        adminAuditService.record(
                 actorId,
                 "USER_SESSIONS_REVOKED",
                 "USER",
                 targetUserId,
-                toJson(Map.of("reason", cleanReason))
-        ));
+                cleanReason,
+                Map.of("username", target.getUsername(), "activeSessions", "UNKNOWN"),
+                Map.of("username", target.getUsername(), "sessionsRevoked", true)
+        );
     }
 
     @Transactional
@@ -122,23 +136,32 @@ public class AdminAccountManagementUseCase {
 
         User target = requireUser(targetUserId);
         GlobalRole previousRole = target.getEffectiveGlobalRole();
+        Map<String, Object> beforeState = Map.of(
+                "globalRole", previousRole.name(),
+                "status", target.getStatus().name()
+        );
+
         target.setGlobalRole(newRole);
         target.setUpdatedAt(Instant.now());
         User saved = userRepository.save(target);
 
         refreshTokenRepository.revokeAllByUserId(targetUserId);
 
-        auditLogRepository.save(AuditLog.create(
+        Map<String, Object> afterState = Map.of(
+                "globalRole", saved.getEffectiveGlobalRole().name(),
+                "status", saved.getStatus().name(),
+                "sessionsRevoked", true
+        );
+
+        adminAuditService.record(
                 actorId,
                 "USER_GLOBAL_ROLE_CHANGED",
                 "USER",
                 targetUserId,
-                toJson(Map.of(
-                        "reason", cleanReason,
-                        "previousRole", previousRole.name(),
-                        "newRole", newRole.name()
-                ))
-        ));
+                cleanReason,
+                beforeState,
+                afterState
+        );
         return saved;
     }
 
@@ -152,13 +175,5 @@ public class AdminAccountManagementUseCase {
             throw new DomainException(HttpStatus.BAD_REQUEST, "REASON_REQUIRED", "Administrative action reason is required");
         }
         return reason.trim();
-    }
-
-    private String toJson(Map<String, Object> payload) {
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException e) {
-            return "{}";
-        }
     }
 }
