@@ -33,6 +33,7 @@ export const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,17 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     loadProfile();
   }, [userId, authUser?.id]);
+
+  useEffect(() => {
+    if (!isAvatarModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAvatarModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAvatarModalOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -204,6 +216,21 @@ export const ProfilePage: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div
+                  role={!isEditing && profile.avatarUrl ? 'button' : undefined}
+                  tabIndex={!isEditing && profile.avatarUrl ? 0 : undefined}
+                  title={!isEditing && profile.avatarUrl ? 'Ampliar foto de perfil' : undefined}
+                  aria-label={!isEditing && profile.avatarUrl ? 'Ampliar foto de perfil' : undefined}
+                  onClick={() => {
+                    if (!isEditing && profile.avatarUrl) {
+                      setIsAvatarModalOpen(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (!isEditing && profile.avatarUrl && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setIsAvatarModalOpen(true);
+                    }
+                  }}
                   style={{
                     width: '76px',
                     height: '76px',
@@ -217,6 +244,7 @@ export const ProfilePage: React.FC = () => {
                     fontSize: '2rem',
                     overflow: 'hidden',
                     border: getAvatarBorderStyle(profile.activeAvatarBorder),
+                    cursor: !isEditing && profile.avatarUrl ? 'pointer' : 'default',
                   }}
                 >
                   {profile.avatarUrl ? (
@@ -229,7 +257,7 @@ export const ProfilePage: React.FC = () => {
                     profile.name.charAt(0).toUpperCase()
                   )}
                 </div>
-                {isOwnProfile && (
+                {isOwnProfile && isEditing && (
                   <>
                     <input
                       ref={avatarInputRef}
@@ -635,6 +663,62 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {isAvatarModalOpen && profile.avatarUrl && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Foto de perfil de ${profile.name}`}
+          onClick={() => setIsAvatarModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            cursor: 'pointer',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsAvatarModalOpen(false)}
+            aria-label="Fechar visualização"
+            style={{
+              position: 'absolute',
+              top: '1.25rem',
+              right: '1.25rem',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={20} />
+          </button>
+          <img
+            src={profile.avatarUrl}
+            alt={profile.name}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '85vh',
+              borderRadius: '12px',
+              objectFit: 'contain',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+              cursor: 'default',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

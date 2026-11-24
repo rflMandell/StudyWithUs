@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users, Plus, Search, Globe, Lock, Check } from 'lucide-react';
 import { Community } from '../types/community';
 import { communityService } from '../services/communityService';
@@ -8,6 +8,7 @@ import { CreateCommunityModal } from '../components/CreateCommunityModal';
 import { AlertError } from '../components/AlertError';
 
 export const CommunitiesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -120,7 +121,20 @@ export const CommunitiesPage: React.FC = () => {
               const isMember = !!comm.currentUserRole;
 
               return (
-                <div key={comm.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div
+                  key={comm.id}
+                  className="card card-clickable"
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => navigate(`/communities/${comm.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      navigate(`/communities/${comm.id}`);
+                    }
+                  }}
+                  style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                >
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                       <span
@@ -152,6 +166,7 @@ export const CommunitiesPage: React.FC = () => {
                   <div style={{ display: 'flex', gap: '0.6rem', marginTop: 'auto' }}>
                     <Link
                       to={`/communities/${comm.id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="btn btn-secondary"
                       style={{ flex: 1, padding: '0.55rem', fontSize: '0.875rem' }}
                     >
@@ -165,7 +180,6 @@ export const CommunitiesPage: React.FC = () => {
                           flex: 1,
                           padding: '0.55rem',
                           fontSize: '0.875rem',
-                          cursor: 'default',
                           color: '#059669',
                           borderColor: '#a7f3d0',
                           backgroundColor: '#ecfdf5',
@@ -177,7 +191,10 @@ export const CommunitiesPage: React.FC = () => {
                       </span>
                     ) : comm.visibility === 'PUBLIC' ? (
                       <button
-                        onClick={() => handleJoin(comm.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleJoin(comm.id);
+                        }}
                         disabled={joiningId === comm.id}
                         className="btn btn-primary"
                         style={{ flex: 1, padding: '0.55rem', fontSize: '0.875rem' }}
