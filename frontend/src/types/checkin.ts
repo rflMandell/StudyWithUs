@@ -6,6 +6,8 @@ export interface Checkin {
   mediaKeys?: string[];
   mediaUrls?: string[];
   commentsCount?: number;
+  likesCount?: number;
+  likedByCurrentUser?: boolean;
   createdAt: string;
   updatedAt: string;
 }

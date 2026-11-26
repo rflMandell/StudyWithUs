@@ -1,6 +1,7 @@
 import { api } from './api';
 import { Checkin, CreateCheckinData } from '../types/checkin';
 import { PagedResponse } from '../types/community';
+import { LikeToggleResponse } from '../types/comment';
 
 export const checkinService = {
   async createCheckin(data: CreateCheckinData, idempotencyKey?: string): Promise<Checkin> {
@@ -21,6 +22,11 @@ export const checkinService = {
     const response = await api.get<PagedResponse<Checkin>>(`/communities/${communityId}/checkins`, {
       params: { page, size },
     });
+    return response.data;
+  },
+
+  async toggleLike(checkinId: string): Promise<LikeToggleResponse> {
+    const response = await api.post<LikeToggleResponse>(`/checkins/${checkinId}/like`);
     return response.data;
   },
 

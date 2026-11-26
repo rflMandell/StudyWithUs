@@ -378,6 +378,8 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                 <CommentSection
                   checkinId={checkin.id}
                   initialCommentsCount={checkin.commentsCount || 0}
+                  initialLikesCount={checkin.likesCount || 0}
+                  initialLikedByCurrentUser={Boolean(checkin.likedByCurrentUser)}
                   isMember={isMember}
                   currentUserId={currentUserId}
                 />

@@ -23,6 +23,8 @@ public record FeedItemResponse(
         List<String> mediaKeys,
         List<String> mediaUrls,
         long commentsCount,
+        long likesCount,
+        boolean likedByCurrentUser,
         Instant createdAt
 ) {
     public static FeedItemResponse from(FeedItemResult result) {
@@ -48,6 +50,8 @@ public record FeedItemResponse(
                 result.mediaKeys(),
                 urls,
                 result.commentsCount(),
+                result.likesCount(),
+                result.likedByCurrentUser(),
                 result.createdAt()
         );
     }

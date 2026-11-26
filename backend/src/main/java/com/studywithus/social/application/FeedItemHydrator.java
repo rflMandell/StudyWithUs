@@ -1,6 +1,7 @@
 package com.studywithus.social.application;
 
 import com.studywithus.checkin.domain.Checkin;
+import com.studywithus.checkin.domain.CheckinLikeRepository;
 import com.studywithus.checkin.domain.CheckinMedia;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.Community;
@@ -30,18 +31,21 @@ public class FeedItemHydrator {
     private final CommunityRepository communityRepository;
     private final CommentRepository commentRepository;
     private final UserLevelRepository userLevelRepository;
+    private final CheckinLikeRepository checkinLikeRepository;
 
     @Autowired
     public FeedItemHydrator(
             UserRepository userRepository,
             CommunityRepository communityRepository,
             CommentRepository commentRepository,
-            @Autowired(required = false) UserLevelRepository userLevelRepository
+            @Autowired(required = false) UserLevelRepository userLevelRepository,
+            @Autowired(required = false) CheckinLikeRepository checkinLikeRepository
     ) {
         this.userRepository = userRepository;
         this.communityRepository = communityRepository;
         this.commentRepository = commentRepository;
         this.userLevelRepository = userLevelRepository;
+        this.checkinLikeRepository = checkinLikeRepository;
     }
 
     public FeedItemHydrator(
@@ -49,7 +53,7 @@ public class FeedItemHydrator {
             CommunityRepository communityRepository,
             CommentRepository commentRepository
     ) {
-        this(userRepository, communityRepository, commentRepository, null);
+        this(userRepository, communityRepository, commentRepository, null, null);
     }
 
     public List<Checkin> hydrateInOrder(List<UUID> orderedIds, CheckinRepository checkinRepository) {
@@ -70,6 +74,10 @@ public class FeedItemHydrator {
     }
 
     public FeedCursorResult toCursorResult(List<Checkin> checkins, int limit) {
+        return toCursorResult(checkins, limit, null);
+    }
+
+    public FeedCursorResult toCursorResult(List<Checkin> checkins, int limit, UUID callerId) {
         if (checkins == null || checkins.isEmpty()) {
             return new FeedCursorResult(Collections.emptyList(), null, false);
         }
@@ -103,6 +111,14 @@ public class FeedItemHydrator {
 
         Map<UUID, Long> commentCountsMap = commentRepository.countActiveByCheckinIds(checkinIds);
 
+        Map<UUID, Long> likeCountsMap = checkinLikeRepository != null
+                ? checkinLikeRepository.countByCheckinIds(checkinIds)
+                : Collections.emptyMap();
+
+        Set<UUID> likedCheckinIds = (checkinLikeRepository != null && callerId != null)
+                ? checkinLikeRepository.findLikedCheckinIdsByUser(checkinIds, callerId)
+                : Collections.emptySet();
+
         Map<UUID, UserLevel> userLevelMap = userLevelRepository != null
                 ? userLevelRepository.findAllByUserIds(userIds).stream()
                         .collect(Collectors.toMap(UserLevel::getUserId, Function.identity()))
@@ -122,6 +138,8 @@ public class FeedItemHydrator {
                     : Collections.emptyList();
 
             long commentsCount = commentCountsMap.getOrDefault(c.getId(), 0L);
+            long likesCount = likeCountsMap.getOrDefault(c.getId(), 0L);
+            boolean likedByCurrentUser = likedCheckinIds.contains(c.getId());
 
             results.add(new FeedItemResult(
                     c.getId(),
@@ -137,6 +155,8 @@ public class FeedItemHydrator {
                     c.getCaption(),
                     mediaKeys,
                     commentsCount,
+                    likesCount,
+                    likedByCurrentUser,
                     c.getCreatedAt()
             ));
         }

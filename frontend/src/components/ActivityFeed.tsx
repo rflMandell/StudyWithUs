@@ -312,6 +312,8 @@ export const ActivityFeed: React.FC = () => {
               <CommentSection
                 checkinId={item.id}
                 initialCommentsCount={item.commentsCount || 0}
+                initialLikesCount={item.likesCount || 0}
+                initialLikedByCurrentUser={Boolean(item.likedByCurrentUser)}
                 isMember={true}
                 currentUserId={user?.id}
               />

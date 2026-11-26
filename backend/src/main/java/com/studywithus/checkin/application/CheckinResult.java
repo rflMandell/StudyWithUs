@@ -15,14 +15,25 @@ public record CheckinResult(
         String caption,
         List<String> mediaKeys,
         long commentsCount,
+        long likesCount,
+        boolean likedByCurrentUser,
         Instant createdAt,
         Instant updatedAt
 ) {
     public static CheckinResult fromDomain(Checkin checkin) {
-        return fromDomain(checkin, 0L);
+        return fromDomain(checkin, 0L, 0L, false);
     }
 
     public static CheckinResult fromDomain(Checkin checkin, long commentsCount) {
+        return fromDomain(checkin, commentsCount, 0L, false);
+    }
+
+    public static CheckinResult fromDomain(
+            Checkin checkin,
+            long commentsCount,
+            long likesCount,
+            boolean likedByCurrentUser
+    ) {
         List<String> keys = checkin.getMedia() != null
                 ? checkin.getMedia().stream().map(CheckinMedia::getStorageKey).toList()
                 : Collections.emptyList();
@@ -34,6 +45,8 @@ public record CheckinResult(
                 checkin.getCaption(),
                 keys,
                 commentsCount,
+                likesCount,
+                likedByCurrentUser,
                 checkin.getCreatedAt(),
                 checkin.getUpdatedAt()
         );

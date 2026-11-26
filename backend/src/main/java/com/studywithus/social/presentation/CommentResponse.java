@@ -8,8 +8,11 @@ import java.util.UUID;
 public record CommentResponse(
         UUID id,
         UUID checkinId,
+        UUID parentCommentId,
         CommentAuthorResponse author,
         String content,
+        long likesCount,
+        boolean likedByCurrentUser,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -17,6 +20,7 @@ public record CommentResponse(
         return new CommentResponse(
                 result.id(),
                 result.checkinId(),
+                result.parentCommentId(),
                 new CommentAuthorResponse(
                         result.authorId(),
                         result.authorUsername(),
@@ -24,6 +28,8 @@ public record CommentResponse(
                         result.authorAvatarUrl()
                 ),
                 result.content(),
+                result.likesCount(),
+                result.likedByCurrentUser(),
                 result.createdAt(),
                 result.updatedAt()
         );

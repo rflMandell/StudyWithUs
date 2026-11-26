@@ -19,6 +19,7 @@ import java.util.UUID;
 public class Comment {
     private UUID id;
     private UUID checkinId;
+    private UUID parentCommentId;
     private UUID authorId;
     private String content;
     private Instant createdAt;
@@ -26,6 +27,10 @@ public class Comment {
     private Instant deletedAt;
 
     public static Comment create(UUID checkinId, UUID authorId, String content) {
+        return create(checkinId, authorId, content, null);
+    }
+
+    public static Comment create(UUID checkinId, UUID authorId, String content, UUID parentCommentId) {
         if (content == null || content.trim().isEmpty()) {
             throw new DomainException(HttpStatus.BAD_REQUEST, "COMMENT_EMPTY", "O comentário não pode ser vazio");
         }
@@ -38,6 +43,7 @@ public class Comment {
         return Comment.builder()
                 .id(UUID.randomUUID())
                 .checkinId(checkinId)
+                .parentCommentId(parentCommentId)
                 .authorId(authorId)
                 .content(trimmed)
                 .createdAt(now)

@@ -1,27 +1,52 @@
 package com.studywithus.checkin.application;
 
 import com.studywithus.checkin.domain.Checkin;
+import com.studywithus.checkin.domain.CheckinLikeRepository;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.Community;
 import com.studywithus.community.domain.CommunityMemberRepository;
 import com.studywithus.community.domain.CommunityRepository;
 import com.studywithus.shared.domain.DomainException;
 import com.studywithus.shared.domain.PagedResult;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class ListCommunityCheckinsUseCase {
 
     private final CheckinRepository checkinRepository;
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
+    private final CheckinLikeRepository checkinLikeRepository;
+
+    @Autowired
+    public ListCommunityCheckinsUseCase(
+            CheckinRepository checkinRepository,
+            CommunityRepository communityRepository,
+            CommunityMemberRepository communityMemberRepository,
+            @Autowired(required = false) CheckinLikeRepository checkinLikeRepository
+    ) {
+        this.checkinRepository = checkinRepository;
+        this.communityRepository = communityRepository;
+        this.communityMemberRepository = communityMemberRepository;
+        this.checkinLikeRepository = checkinLikeRepository;
+    }
+
+    public ListCommunityCheckinsUseCase(
+            CheckinRepository checkinRepository,
+            CommunityRepository communityRepository,
+            CommunityMemberRepository communityMemberRepository
+    ) {
+        this(checkinRepository, communityRepository, communityMemberRepository, null);
+    }
 
     @Transactional(readOnly = true)
     public PagedResult<CheckinResult> execute(UUID communityId, int page, int size) {
@@ -46,8 +71,21 @@ public class ListCommunityCheckinsUseCase {
 
         PagedResult<Checkin> pagedResult = checkinRepository.findByCommunityIdActive(communityId, page, size);
 
+        List<UUID> checkinIds = pagedResult.content().stream().map(Checkin::getId).toList();
+        Map<UUID, Long> likesMap = checkinLikeRepository != null && !checkinIds.isEmpty()
+                ? checkinLikeRepository.countByCheckinIds(checkinIds)
+                : Collections.emptyMap();
+        Set<UUID> likedIds = checkinLikeRepository != null && callerId != null && !checkinIds.isEmpty()
+                ? checkinLikeRepository.findLikedCheckinIdsByUser(checkinIds, callerId)
+                : Collections.emptySet();
+
         List<CheckinResult> content = pagedResult.content().stream()
-                .map(CheckinResult::fromDomain)
+                .map(c -> CheckinResult.fromDomain(
+                        c,
+                        0L,
+                        likesMap.getOrDefault(c.getId(), 0L),
+                        likedIds.contains(c.getId())
+                ))
                 .toList();
 
         return new PagedResult<>(

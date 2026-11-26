@@ -148,4 +148,84 @@ class CreateCommentUseCaseTest {
                     assertThat(de.getCode()).isEqualTo("CHECKIN_NOT_FOUND");
                 });
     }
+
+    @Test
+    @DisplayName("should create reply to existing comment on same checkin")
+    void shouldCreateReplyToCommentSuccessfully() {
+        UUID checkinId = UUID.randomUUID();
+        UUID parentCommentId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+
+        Checkin checkin = Checkin.builder()
+                .id(checkinId)
+                .communityId(communityId)
+                .userId(UUID.randomUUID())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        Comment parentComment = Comment.builder()
+                .id(parentCommentId)
+                .checkinId(checkinId)
+                .authorId(UUID.randomUUID())
+                .content("Comentário pai")
+                .build();
+
+        User author = User.builder()
+                .id(authorId)
+                .username("mariasilva")
+                .name("Maria Silva")
+                .status(UserStatus.ACTIVE)
+                .build();
+
+        when(checkinRepository.findById(checkinId)).thenReturn(Optional.of(checkin));
+        when(communityMemberRepository.isUserActiveMember(communityId, authorId)).thenReturn(true);
+        when(commentRepository.findById(parentCommentId)).thenReturn(Optional.of(parentComment));
+        when(userRepository.findById(authorId)).thenReturn(Optional.of(author));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CommentResult result = useCase.execute(new CreateCommentCommand(checkinId, authorId, "Concordo!", parentCommentId));
+
+        assertThat(result.parentCommentId()).isEqualTo(parentCommentId);
+        assertThat(result.content()).isEqualTo("Concordo!");
+
+        ArgumentCaptor<CommentCreatedEvent> eventCaptor = ArgumentCaptor.forClass(CommentCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().parentCommentId()).isEqualTo(parentCommentId);
+    }
+
+    @Test
+    @DisplayName("should throw 400 when parent comment belongs to a different checkin")
+    void shouldThrow400WhenParentCommentBelongsToDifferentCheckin() {
+        UUID checkinId = UUID.randomUUID();
+        UUID parentCommentId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        UUID communityId = UUID.randomUUID();
+
+        Checkin checkin = Checkin.builder()
+                .id(checkinId)
+                .communityId(communityId)
+                .userId(UUID.randomUUID())
+                .build();
+
+        Comment parentComment = Comment.builder()
+                .id(parentCommentId)
+                .checkinId(UUID.randomUUID())
+                .authorId(UUID.randomUUID())
+                .content("Outro checkin")
+                .build();
+
+        when(checkinRepository.findById(checkinId)).thenReturn(Optional.of(checkin));
+        when(communityMemberRepository.isUserActiveMember(communityId, authorId)).thenReturn(true);
+        when(commentRepository.findById(parentCommentId)).thenReturn(Optional.of(parentComment));
+
+        assertThatThrownBy(() -> useCase.execute(new CreateCommentCommand(checkinId, authorId, "Resposta", parentCommentId)))
+                .isInstanceOf(DomainException.class)
+                .satisfies(ex -> {
+                    DomainException de = (DomainException) ex;
+                    assertThat(de.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(de.getCode()).isEqualTo("INVALID_PARENT_COMMENT");
+                });
+    }
 }

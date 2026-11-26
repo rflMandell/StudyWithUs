@@ -69,7 +69,7 @@ public class GetCommunityFeedUseCase {
             FeedTimelineSlice slice = feedTimelinePort.getCommunityTimeline(communityId, cursorInstant, cursorId, boundedLimit + 1);
             if (slice.cacheHit()) {
                 List<Checkin> checkins = feedItemHydrator.hydrateInOrder(slice.checkinIds(), checkinRepository);
-                return feedItemHydrator.toCursorResult(checkins, boundedLimit);
+                return feedItemHydrator.toCursorResult(checkins, boundedLimit, callerId);
             }
         }
 
@@ -88,6 +88,6 @@ public class GetCommunityFeedUseCase {
             feedTimelinePort.warmCommunityTimeline(communityId, entries);
         }
 
-        return feedItemHydrator.toCursorResult(checkins, boundedLimit);
+        return feedItemHydrator.toCursorResult(checkins, boundedLimit, callerId);
     }
 }

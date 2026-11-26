@@ -1,6 +1,9 @@
 package com.studywithus.notification.application;
 
+import com.studywithus.checkin.domain.Checkin;
 import com.studywithus.checkin.domain.CheckinCreatedEvent;
+import com.studywithus.checkin.domain.CheckinLikedEvent;
+import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.CommunityMemberJoinedEvent;
 import com.studywithus.gamification.domain.StreakUpdatedEvent;
 import com.studywithus.gamification.domain.UserLevelUpEvent;
@@ -8,19 +11,42 @@ import com.studywithus.notification.domain.NotificationType;
 import com.studywithus.notification.domain.RealtimeNotification;
 import com.studywithus.notification.domain.RealtimeNotificationPort;
 import com.studywithus.ranking.domain.RankingUpdatedEvent;
+import com.studywithus.social.domain.Comment;
+import com.studywithus.social.domain.CommentCreatedEvent;
+import com.studywithus.social.domain.CommentLikedEvent;
+import com.studywithus.social.domain.CommentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RealtimeNotificationEventListener {
 
     private final RealtimeNotificationPort notificationPort;
+    private final CheckinRepository checkinRepository;
+    private final CommentRepository commentRepository;
+
+    @Autowired
+    public RealtimeNotificationEventListener(
+            RealtimeNotificationPort notificationPort,
+            @Autowired(required = false) CheckinRepository checkinRepository,
+            @Autowired(required = false) CommentRepository commentRepository
+    ) {
+        this.notificationPort = notificationPort;
+        this.checkinRepository = checkinRepository;
+        this.commentRepository = commentRepository;
+    }
+
+    public RealtimeNotificationEventListener(RealtimeNotificationPort notificationPort) {
+        this(notificationPort, null, null);
+    }
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
@@ -40,6 +66,106 @@ public class RealtimeNotificationEventListener {
         );
 
         notificationPort.broadcastToCommunity(event.communityId(), notification, event.userId());
+    }
+
+    @EventListener
+    public void onCheckinLiked(CheckinLikedEvent event) {
+        if (event.checkinAuthorId().equals(event.likerUserId())) {
+            return;
+        }
+
+        RealtimeNotification notification = RealtimeNotification.create(
+                NotificationType.CHECKIN_LIKED,
+                event.checkinAuthorId(),
+                event.communityId(),
+                "Nova curtida no seu check-in",
+                "Alguém curtiu o seu check-in de estudos.",
+                Map.of(
+                        "checkinId", event.checkinId().toString(),
+                        "likerUserId", event.likerUserId().toString(),
+                        "communityId", event.communityId().toString()
+                )
+        );
+
+        notificationPort.sendToUser(event.checkinAuthorId(), notification);
+    }
+
+    @EventListener
+    public void onCommentLiked(CommentLikedEvent event) {
+        if (event.commentAuthorId().equals(event.likerUserId())) {
+            return;
+        }
+
+        RealtimeNotification notification = RealtimeNotification.create(
+                NotificationType.COMMENT_LIKED,
+                event.commentAuthorId(),
+                event.communityId(),
+                "Nova curtida no seu comentário",
+                "Alguém curtiu o seu comentário.",
+                Map.of(
+                        "commentId", event.commentId().toString(),
+                        "checkinId", event.checkinId().toString(),
+                        "likerUserId", event.likerUserId().toString(),
+                        "communityId", event.communityId().toString()
+                )
+        );
+
+        notificationPort.sendToUser(event.commentAuthorId(), notification);
+    }
+
+    @EventListener
+    public void onCommentCreated(CommentCreatedEvent event) {
+        if (checkinRepository == null) {
+            return;
+        }
+
+        Optional<Checkin> checkinOpt = checkinRepository.findById(event.checkinId());
+        if (checkinOpt.isEmpty()) {
+            return;
+        }
+        Checkin checkin = checkinOpt.get();
+        UUID notifiedParentAuthorId = null;
+
+        if (event.parentCommentId() != null && commentRepository != null) {
+            Optional<Comment> parentOpt = commentRepository.findById(event.parentCommentId());
+            if (parentOpt.isPresent()) {
+                Comment parentComment = parentOpt.get();
+                if (!parentComment.getAuthorId().equals(event.authorId())) {
+                    notifiedParentAuthorId = parentComment.getAuthorId();
+                    RealtimeNotification replyNotification = RealtimeNotification.create(
+                            NotificationType.COMMENT_REPLY,
+                            parentComment.getAuthorId(),
+                            event.communityId(),
+                            "Nova resposta ao seu comentário",
+                            "Alguém respondeu ao seu comentário.",
+                            Map.of(
+                                    "commentId", event.commentId().toString(),
+                                    "parentCommentId", event.parentCommentId().toString(),
+                                    "checkinId", event.checkinId().toString(),
+                                    "authorId", event.authorId().toString()
+                            )
+                    );
+                    notificationPort.sendToUser(parentComment.getAuthorId(), replyNotification);
+                }
+            }
+        }
+
+        if (!checkin.getUserId().equals(event.authorId())
+                && !checkin.getUserId().equals(notifiedParentAuthorId)) {
+            RealtimeNotification commentNotification = RealtimeNotification.create(
+                    NotificationType.NEW_COMMENT,
+                    checkin.getUserId(),
+                    event.communityId(),
+                    "Novo comentário no seu check-in",
+                    "Alguém comentou no seu check-in de estudos.",
+                    Map.of(
+                            "commentId", event.commentId().toString(),
+                            "checkinId", event.checkinId().toString(),
+                            "authorId", event.authorId().toString()
+                    )
+            );
+            notificationPort.sendToUser(checkin.getUserId(), commentNotification);
+        }
     }
 
     @EventListener

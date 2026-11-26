@@ -91,7 +91,7 @@ public class GetUserFeedUseCase {
                     cacheHitCounter.increment();
                 }
                 List<Checkin> checkins = feedItemHydrator.hydrateInOrder(slice.checkinIds(), checkinRepository);
-                return feedItemHydrator.toCursorResult(checkins, limit);
+                return feedItemHydrator.toCursorResult(checkins, limit, query.userId());
             }
         }
 
@@ -121,6 +121,6 @@ public class GetUserFeedUseCase {
             feedTimelinePort.warmUserTimeline(query.userId(), entries);
         }
 
-        return feedItemHydrator.toCursorResult(checkins, limit);
+        return feedItemHydrator.toCursorResult(checkins, limit, query.userId());
     }
 }

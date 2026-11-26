@@ -1,6 +1,7 @@
 package com.studywithus.notification.application;
 
 import com.studywithus.checkin.domain.Checkin;
+import com.studywithus.checkin.domain.CheckinLikedEvent;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.CommunityJoinRequestReviewedEvent;
 import com.studywithus.community.domain.CommunityJoinRequestStatus;
@@ -9,7 +10,10 @@ import com.studywithus.gamification.domain.ChallengeCompletedEvent;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.notification.domain.NotificationType;
+import com.studywithus.social.domain.Comment;
 import com.studywithus.social.domain.CommentCreatedEvent;
+import com.studywithus.social.domain.CommentLikedEvent;
+import com.studywithus.social.domain.CommentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,12 +24,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +43,9 @@ class NotificationEventListenerTest {
 
     @Mock
     private CheckinRepository checkinRepository;
+
+    @Mock
+    private CommentRepository commentRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -168,5 +177,93 @@ class NotificationEventListenerTest {
 
         assertThat(captor.getValue().userId()).isEqualTo(checkinAuthorId);
         assertThat(captor.getValue().type()).isEqualTo(NotificationType.JOIN_REQUEST_APPROVED);
+    }
+
+    @Test
+    @DisplayName("Creates notifications for both parent comment author and checkin author on comment reply")
+    void shouldNotifyCommentAndCheckinAuthorsOnReply() {
+        UUID parentCommentId = UUID.randomUUID();
+        UUID parentAuthorId = UUID.randomUUID();
+        UUID replyAuthorId = UUID.randomUUID();
+
+        Checkin checkin = Checkin.builder()
+                .id(checkinId)
+                .userId(checkinAuthorId)
+                .build();
+        Comment parentComment = Comment.builder()
+                .id(parentCommentId)
+                .checkinId(checkinId)
+                .authorId(parentAuthorId)
+                .content("Comentário original")
+                .build();
+        User replyAuthor = User.builder()
+                .id(replyAuthorId)
+                .username("mariasilva")
+                .build();
+
+        when(checkinRepository.findById(checkinId)).thenReturn(Optional.of(checkin));
+        when(commentRepository.findById(parentCommentId)).thenReturn(Optional.of(parentComment));
+        when(userRepository.findById(replyAuthorId)).thenReturn(Optional.of(replyAuthor));
+
+        CommentCreatedEvent event = new CommentCreatedEvent(
+                UUID.randomUUID(),
+                checkinId,
+                parentCommentId,
+                replyAuthorId,
+                UUID.randomUUID()
+        );
+
+        listener.onCommentCreated(event);
+
+        ArgumentCaptor<CreateNotificationCommand> captor = ArgumentCaptor.forClass(CreateNotificationCommand.class);
+        verify(createInAppNotificationUseCase, times(2)).execute(captor.capture());
+
+        List<CreateNotificationCommand> commands = captor.getAllValues();
+        assertThat(commands).anyMatch(c ->
+                c.userId().equals(parentAuthorId) && c.type() == NotificationType.COMMENT_REPLY && c.body().contains("mariasilva"));
+        assertThat(commands).anyMatch(c ->
+                c.userId().equals(checkinAuthorId) && c.type() == NotificationType.NEW_COMMENT && c.body().contains("mariasilva"));
+    }
+
+    @Test
+    @DisplayName("Creates notification for checkin owner when another user likes checkin")
+    void shouldNotifyOnCheckinLiked() {
+        UUID likerId = UUID.randomUUID();
+        User liker = User.builder().id(likerId).username("lucas").build();
+        when(userRepository.findById(likerId)).thenReturn(Optional.of(liker));
+
+        listener.onCheckinLiked(new CheckinLikedEvent(checkinId, checkinAuthorId, likerId, UUID.randomUUID()));
+
+        ArgumentCaptor<CreateNotificationCommand> captor = ArgumentCaptor.forClass(CreateNotificationCommand.class);
+        verify(createInAppNotificationUseCase).execute(captor.capture());
+        assertThat(captor.getValue().userId()).isEqualTo(checkinAuthorId);
+        assertThat(captor.getValue().type()).isEqualTo(NotificationType.CHECKIN_LIKED);
+        assertThat(captor.getValue().body()).contains("lucas");
+    }
+
+    @Test
+    @DisplayName("Does not notify when user likes own checkin or comment")
+    void shouldIgnoreSelfLike() {
+        listener.onCheckinLiked(new CheckinLikedEvent(checkinId, checkinAuthorId, checkinAuthorId, UUID.randomUUID()));
+        listener.onCommentLiked(new CommentLikedEvent(UUID.randomUUID(), checkinId, commentAuthorId, commentAuthorId, UUID.randomUUID()));
+
+        verify(createInAppNotificationUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("Creates notification for comment owner when another user likes comment")
+    void shouldNotifyOnCommentLiked() {
+        UUID commentId = UUID.randomUUID();
+        UUID likerId = UUID.randomUUID();
+        User liker = User.builder().id(likerId).username("ana").build();
+        when(userRepository.findById(likerId)).thenReturn(Optional.of(liker));
+
+        listener.onCommentLiked(new CommentLikedEvent(commentId, checkinId, commentAuthorId, likerId, UUID.randomUUID()));
+
+        ArgumentCaptor<CreateNotificationCommand> captor = ArgumentCaptor.forClass(CreateNotificationCommand.class);
+        verify(createInAppNotificationUseCase).execute(captor.capture());
+        assertThat(captor.getValue().userId()).isEqualTo(commentAuthorId);
+        assertThat(captor.getValue().type()).isEqualTo(NotificationType.COMMENT_LIKED);
+        assertThat(captor.getValue().body()).contains("ana");
     }
 }

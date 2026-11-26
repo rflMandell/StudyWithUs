@@ -1,5 +1,7 @@
 package com.studywithus.social.presentation;
 
+import com.studywithus.checkin.application.LikeToggleResult;
+import com.studywithus.checkin.presentation.LikeToggleResponse;
 import com.studywithus.identity.infrastructure.SecurityUserPrincipal;
 import com.studywithus.shared.domain.PagedResult;
 import com.studywithus.shared.presentation.PagedResponse;
@@ -10,6 +12,8 @@ import com.studywithus.social.application.DeleteCommentCommand;
 import com.studywithus.social.application.DeleteCommentUseCase;
 import com.studywithus.social.application.ListCommentsQuery;
 import com.studywithus.social.application.ListCommentsUseCase;
+import com.studywithus.social.application.ToggleCommentLikeCommand;
+import com.studywithus.social.application.ToggleCommentLikeUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +39,7 @@ public class CommentController {
     private final CreateCommentUseCase createCommentUseCase;
     private final ListCommentsUseCase listCommentsUseCase;
     private final DeleteCommentUseCase deleteCommentUseCase;
+    private final ToggleCommentLikeUseCase toggleCommentLikeUseCase;
 
     @PostMapping("/checkins/{checkinId}/comments")
     public ResponseEntity<CommentResponse> createComment(
@@ -43,7 +48,7 @@ public class CommentController {
             @AuthenticationPrincipal SecurityUserPrincipal principal
     ) {
         CommentResult result = createCommentUseCase.execute(
-                new CreateCommentCommand(checkinId, principal.getId(), request.content())
+                new CreateCommentCommand(checkinId, principal.getId(), request.content(), request.parentCommentId())
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(CommentResponse.from(result));
     }
@@ -60,6 +65,17 @@ public class CommentController {
                 new ListCommentsQuery(checkinId, callerId, page, size)
         );
         return ResponseEntity.ok(PagedResponse.from(pagedResult, CommentResponse::from));
+    }
+
+    @PostMapping("/comments/{commentId}/like")
+    public ResponseEntity<LikeToggleResponse> toggleLike(
+            @PathVariable UUID commentId,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
+        LikeToggleResult result = toggleCommentLikeUseCase.execute(
+                new ToggleCommentLikeCommand(commentId, principal.getId())
+        );
+        return ResponseEntity.ok(LikeToggleResponse.from(result));
     }
 
     @DeleteMapping("/comments/{commentId}")

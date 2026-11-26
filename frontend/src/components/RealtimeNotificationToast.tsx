@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, Flame, Trophy, CheckCircle, X, Sparkles } from 'lucide-react';
+import { Bell, Flame, Trophy, CheckCircle, X, Sparkles, Heart, MessageSquare } from 'lucide-react';
 import { realtimeService } from '../services/realtimeService';
 import { RealtimeNotification } from '../types/realtime';
 
@@ -43,6 +43,12 @@ export const RealtimeNotificationToast: React.FC = () => {
         return <Flame size={18} color="#ea580c" />;
       case 'POINTS_AWARDED':
         return <CheckCircle size={18} color="#16a34a" />;
+      case 'CHECKIN_LIKED':
+      case 'COMMENT_LIKED':
+        return <Heart size={18} color="#e11d48" />;
+      case 'NEW_COMMENT':
+      case 'COMMENT_REPLY':
+        return <MessageSquare size={18} color="#2563eb" />;
       default:
         return <Bell size={18} color="#6366f1" />;
     }

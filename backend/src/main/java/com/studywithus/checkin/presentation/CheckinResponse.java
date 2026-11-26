@@ -16,6 +16,8 @@ public record CheckinResponse(
         List<String> mediaKeys,
         List<String> mediaUrls,
         long commentsCount,
+        long likesCount,
+        boolean likedByCurrentUser,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -35,6 +37,8 @@ public record CheckinResponse(
                 result.mediaKeys(),
                 urls,
                 result.commentsCount(),
+                result.likesCount(),
+                result.likedByCurrentUser(),
                 result.createdAt(),
                 result.updatedAt()
         );

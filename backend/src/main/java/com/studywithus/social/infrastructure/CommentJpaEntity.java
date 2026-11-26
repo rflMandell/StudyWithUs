@@ -29,6 +29,9 @@ public class CommentJpaEntity {
     @Column(name = "checkin_id", nullable = false)
     private UUID checkinId;
 
+    @Column(name = "parent_comment_id")
+    private UUID parentCommentId;
+
     @Column(name = "author_id", nullable = false)
     private UUID authorId;
 
@@ -48,6 +51,7 @@ public class CommentJpaEntity {
         return Comment.builder()
                 .id(this.id)
                 .checkinId(this.checkinId)
+                .parentCommentId(this.parentCommentId)
                 .authorId(this.authorId)
                 .content(this.content)
                 .createdAt(this.createdAt)
@@ -60,6 +64,7 @@ public class CommentJpaEntity {
         return CommentJpaEntity.builder()
                 .id(comment.getId())
                 .checkinId(comment.getCheckinId())
+                .parentCommentId(comment.getParentCommentId())
                 .authorId(comment.getAuthorId())
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())

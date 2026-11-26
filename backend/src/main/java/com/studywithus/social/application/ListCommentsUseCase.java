@@ -11,8 +11,9 @@ import com.studywithus.identity.domain.UserRepository;
 import com.studywithus.shared.domain.DomainException;
 import com.studywithus.shared.domain.PagedResult;
 import com.studywithus.social.domain.Comment;
+import com.studywithus.social.domain.CommentLikeRepository;
 import com.studywithus.social.domain.CommentRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ListCommentsUseCase {
 
     private final CommentRepository commentRepository;
@@ -34,6 +34,34 @@ public class ListCommentsUseCase {
     private final CommunityRepository communityRepository;
     private final CommunityMemberRepository communityMemberRepository;
     private final UserRepository userRepository;
+    private final CommentLikeRepository commentLikeRepository;
+
+    @Autowired
+    public ListCommentsUseCase(
+            CommentRepository commentRepository,
+            CheckinRepository checkinRepository,
+            CommunityRepository communityRepository,
+            CommunityMemberRepository communityMemberRepository,
+            UserRepository userRepository,
+            @Autowired(required = false) CommentLikeRepository commentLikeRepository
+    ) {
+        this.commentRepository = commentRepository;
+        this.checkinRepository = checkinRepository;
+        this.communityRepository = communityRepository;
+        this.communityMemberRepository = communityMemberRepository;
+        this.userRepository = userRepository;
+        this.commentLikeRepository = commentLikeRepository;
+    }
+
+    public ListCommentsUseCase(
+            CommentRepository commentRepository,
+            CheckinRepository checkinRepository,
+            CommunityRepository communityRepository,
+            CommunityMemberRepository communityMemberRepository,
+            UserRepository userRepository
+    ) {
+        this(commentRepository, checkinRepository, communityRepository, communityMemberRepository, userRepository, null);
+    }
 
     @Transactional(readOnly = true)
     public PagedResult<CommentResult> execute(ListCommentsQuery query) {
@@ -74,8 +102,20 @@ public class ListCommentsUseCase {
                 .map(Comment::getAuthorId)
                 .collect(Collectors.toSet());
 
+        List<UUID> commentIds = pagedComments.content().stream()
+                .map(Comment::getId)
+                .toList();
+
         Map<UUID, User> authorMap = userRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        Map<UUID, Long> likesMap = commentLikeRepository != null
+                ? commentLikeRepository.countByCommentIds(commentIds)
+                : Collections.emptyMap();
+
+        Set<UUID> likedIds = commentLikeRepository != null && query.callerId() != null
+                ? commentLikeRepository.findLikedCommentIdsByUser(commentIds, query.callerId())
+                : Collections.emptySet();
 
         List<CommentResult> results = pagedComments.content().stream()
                 .map(c -> {
@@ -84,7 +124,9 @@ public class ListCommentsUseCase {
                             c,
                             author != null ? author.getUsername() : "usuario",
                             author != null ? author.getName() : "Usuário",
-                            author != null ? author.getAvatarUrl() : null
+                            author != null ? author.getAvatarUrl() : null,
+                            likesMap.getOrDefault(c.getId(), 0L),
+                            likedIds.contains(c.getId())
                     );
                 })
                 .toList();

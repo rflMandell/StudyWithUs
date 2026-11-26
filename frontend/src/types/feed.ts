@@ -13,6 +13,8 @@ export interface FeedItem {
   mediaKeys: string[];
   mediaUrls?: string[];
   commentsCount?: number;
+  likesCount?: number;
+  likedByCurrentUser?: boolean;
   createdAt: string;
 }
 
