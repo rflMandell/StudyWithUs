@@ -5,6 +5,8 @@ import com.studywithus.checkin.domain.CheckinCreatedEvent;
 import com.studywithus.checkin.domain.CheckinLikedEvent;
 import com.studywithus.checkin.domain.CheckinRepository;
 import com.studywithus.community.domain.CommunityMemberJoinedEvent;
+import com.studywithus.gamification.domain.PointsAwardedEvent;
+import com.studywithus.gamification.domain.PointsReversedEvent;
 import com.studywithus.gamification.domain.StreakUpdatedEvent;
 import com.studywithus.gamification.domain.UserLevelUpEvent;
 import com.studywithus.notification.domain.NotificationType;
@@ -20,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.Map;
 import java.util.Optional;
@@ -251,6 +255,52 @@ public class RealtimeNotificationEventListener {
                         "totalXp", event.totalXp(),
                         "unlockedTitle", event.unlockedTitle(),
                         "unlockedAvatarBorder", event.unlockedAvatarBorder()
+                )
+        );
+
+        notificationPort.sendToUser(event.userId(), notification);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onPointsAwarded(PointsAwardedEvent event) {
+        log.info("Dispatching realtime notification for points awarded: userId={}, amount={}, type={}",
+                event.userId(), event.amount(), event.type());
+
+        RealtimeNotification notification = RealtimeNotification.create(
+                NotificationType.POINTS_AWARDED,
+                event.userId(),
+                event.communityId(),
+                "Pontos recebidos!",
+                "Você ganhou +" + event.amount() + " pontos!",
+                Map.of(
+                        "transactionId", event.transactionId().toString(),
+                        "userId", event.userId().toString(),
+                        "communityId", event.communityId() != null ? event.communityId().toString() : "",
+                        "amount", event.amount(),
+                        "type", event.type().name()
+                )
+        );
+
+        notificationPort.sendToUser(event.userId(), notification);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onPointsReversed(PointsReversedEvent event) {
+        log.info("Dispatching realtime notification for points reversed: userId={}, amount={}",
+                event.userId(), event.amount());
+
+        RealtimeNotification notification = RealtimeNotification.create(
+                NotificationType.POINTS_AWARDED,
+                event.userId(),
+                event.communityId(),
+                "Pontuação atualizada",
+                "Estorno de " + Math.abs(event.amount()) + " pontos.",
+                Map.of(
+                        "reversalTransactionId", event.reversalTransactionId().toString(),
+                        "originalTransactionId", event.originalTransactionId().toString(),
+                        "userId", event.userId().toString(),
+                        "communityId", event.communityId() != null ? event.communityId().toString() : "",
+                        "amount", event.amount()
                 )
         );
 

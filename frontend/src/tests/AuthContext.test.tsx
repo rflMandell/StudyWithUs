@@ -2,8 +2,10 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthProvider, AuthContext } from '../context/AuthContext';
 import { authService } from '../services/authService';
+import { realtimeService } from '../services/realtimeService';
 import { useContext } from 'react';
 import { User, AuthResponse } from '../types/auth';
+import { RealtimeNotification } from '../types/realtime';
 
 vi.mock('../services/authService', () => ({
   authService: {
@@ -101,5 +103,68 @@ describe('AuthContext', () => {
     expect(authService.logout).toHaveBeenCalled();
     expect(result.current?.isAuthenticated).toBe(false);
     expect(result.current?.user).toBeNull();
+  });
+
+  it('refreshes user points via refreshUser without losing session', async () => {
+    vi.mocked(authService.getStoredAccessToken).mockReturnValue('stored-token');
+    vi.mocked(authService.getMe)
+      .mockResolvedValueOnce(mockUser)
+      .mockResolvedValueOnce({ ...mockUser, lifetimePoints: 130 });
+
+    const { result } = renderHook(() => useContext(AuthContext), {
+      wrapper: AuthProvider,
+    });
+
+    await act(async () => {});
+    expect(result.current?.user?.lifetimePoints).toBe(120);
+
+    await act(async () => {
+      await result.current?.refreshUser?.();
+    });
+
+    expect(result.current?.user?.lifetimePoints).toBe(130);
+  });
+
+  it('automatically updates user points when POINTS_AWARDED realtime notification arrives', async () => {
+    let listener: ((notification: RealtimeNotification) => void) | null = null;
+    const subscribeSpy = vi
+      .spyOn(realtimeService, 'subscribe')
+      .mockImplementation((cb) => {
+        listener = cb;
+        return () => {
+          listener = null;
+        };
+      });
+    const connectSpy = vi.spyOn(realtimeService, 'connect').mockImplementation(() => {});
+
+    vi.mocked(authService.getStoredAccessToken).mockReturnValue('stored-token');
+    vi.mocked(authService.getMe)
+      .mockResolvedValueOnce(mockUser)
+      .mockResolvedValueOnce({ ...mockUser, lifetimePoints: 130 });
+
+    const { result } = renderHook(() => useContext(AuthContext), {
+      wrapper: AuthProvider,
+    });
+
+    await act(async () => {});
+    expect(result.current?.user?.lifetimePoints).toBe(120);
+    expect(listener).not.toBeNull();
+
+    await act(async () => {
+      listener!({
+        id: 'notif-pts-1',
+        type: 'POINTS_AWARDED',
+        recipientUserId: 'user-1',
+        title: 'Pontos recebidos!',
+        message: 'Você ganhou +10 pontos!',
+        data: { amount: 10 },
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    expect(result.current?.user?.lifetimePoints).toBe(130);
+
+    subscribeSpy.mockRestore();
+    connectSpy.mockRestore();
   });
 });

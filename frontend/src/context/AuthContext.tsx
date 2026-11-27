@@ -13,6 +13,7 @@ export interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
+  refreshUser?: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -55,6 +56,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const token = authService.getStoredAccessToken();
+    if (!token) {
+      return;
+    }
+
+    try {
+      const userData = await authService.getMe();
+      setUser(userData);
+    } catch {
+      // Keep current user state if background refresh fails
+    }
+  }, []);
+
   useEffect(() => {
     loadCurrentUser();
 
@@ -70,10 +85,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [loadCurrentUser]);
 
   useEffect(() => {
-    if (user) {
-      realtimeService.connect();
-    }
-  }, [user]);
+    if (!user?.id) return;
+
+    realtimeService.connect();
+
+    const unsubscribe = realtimeService.subscribe((notification) => {
+      if (notification.type === 'POINTS_AWARDED') {
+        if (typeof notification.data?.lifetimePoints === 'number') {
+          setUser((prev) =>
+            prev ? { ...prev, lifetimePoints: notification.data.lifetimePoints } : prev
+          );
+        }
+        void refreshUser();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.id, refreshUser]);
 
   const login = async (credentials: LoginCredentials) => {
     setIsLoading(true);
@@ -137,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         updateUser,
+        refreshUser,
         clearError,
       }}
     >

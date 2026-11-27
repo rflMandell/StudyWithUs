@@ -6,6 +6,7 @@ import { checkinService } from '../services/checkinService';
 import { mediaService } from '../services/mediaService';
 import { AlertError } from './AlertError';
 import { CommentSection } from './CommentSection';
+import { useAuth } from '../hooks/useAuth';
 
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -34,6 +35,7 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
   currentUserId,
   members,
 }) => {
+  const { refreshUser } = useAuth();
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [caption, setCaption] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -130,7 +132,7 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
 
       setCaption('');
       clearSelectedFile();
-      await loadCheckins();
+      await Promise.all([loadCheckins(), refreshUser?.()]);
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
@@ -148,7 +150,7 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
 
     try {
       await checkinService.deleteCheckin(checkinId);
-      await loadCheckins();
+      await Promise.all([loadCheckins(), refreshUser?.()]);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Erro ao excluir check-in.');
     }
