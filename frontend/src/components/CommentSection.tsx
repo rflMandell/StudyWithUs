@@ -226,7 +226,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       >
         <div
           style={{
-            backgroundColor: depth > 0 ? '#f1f5f9' : '#f8fafc',
+            backgroundColor: depth > 0 ? 'var(--bg-secondary)' : 'var(--bg-main)',
             borderRadius: '6px',
             padding: '0.6rem 0.75rem',
             display: 'flex',
@@ -241,8 +241,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                   width: '24px',
                   height: '24px',
                   borderRadius: '50%',
-                  backgroundColor: '#e2e8f0',
-                  color: '#475569',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -262,7 +262,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                   (comment.author.name || 'U').charAt(0).toUpperCase()
                 )}
               </div>
-              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-main)' }}>
                 {comment.author.name}
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -295,7 +295,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             </div>
           </div>
 
-          <p style={{ fontSize: '0.85rem', color: '#334155', margin: 0, whiteSpace: 'pre-wrap' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', margin: 0, whiteSpace: 'pre-wrap' }}>
             {comment.content}
           </p>
 
@@ -418,7 +418,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   };
 
   return (
-    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
+    <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
         <button
           type="button"

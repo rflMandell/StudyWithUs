@@ -165,7 +165,7 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
       <AlertError message={error} />
 
       {isMember && (
-        <div className="card" style={{ marginBottom: '1.5rem', backgroundColor: '#ffffff' }}>
+        <div className="card" style={{ marginBottom: '1.5rem', backgroundColor: 'var(--bg-card)' }}>
           <form onSubmit={handleCreateCheckin}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <BookOpen size={18} color="var(--primary)" />
@@ -345,7 +345,7 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                           maxHeight: '320px',
                           maxWidth: '100%',
                           borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid var(--border)',
                           objectFit: 'cover',
                         }}
                       />
@@ -359,11 +359,11 @@ export const CheckinFeed: React.FC<CheckinFeedProps> = ({
                         <div
                           key={idx}
                           style={{
-                            backgroundColor: '#f1f5f9',
+                            backgroundColor: 'var(--bg-secondary)',
                             padding: '0.5rem 0.75rem',
                             borderRadius: '6px',
                             fontSize: '0.85rem',
-                            color: '#334155',
+                            color: 'var(--text-main)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.4rem',

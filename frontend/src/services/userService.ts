@@ -27,4 +27,25 @@ export const userService = {
     const response = await api.get<UserBadge[]>(`/users/${userId}/badges`);
     return response.data;
   },
+
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): Promise<void> => {
+    await api.put('/users/me/password', data);
+  },
+
+  updatePrivacy: async (isPrivate: boolean): Promise<User> => {
+    const response = await api.patch<User>('/users/me/privacy', { isPrivate });
+    return response.data;
+  },
+
+  deactivateAccount: async (): Promise<void> => {
+    await api.post('/users/me/deactivate');
+  },
+
+  deleteAccount: async (): Promise<void> => {
+    await api.delete('/users/me');
+  },
 };

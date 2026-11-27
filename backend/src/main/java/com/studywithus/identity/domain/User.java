@@ -29,6 +29,10 @@ public class User {
     private UserStatus status;
     @Builder.Default
     private GlobalRole globalRole = GlobalRole.USER;
+    @Builder.Default
+    private boolean isPrivate = false;
+    private Instant privacyUpdatedAt;
+    private Instant deactivatedAt;
     private long lifetimePoints;
     private Instant createdAt;
     private Instant updatedAt;
@@ -36,6 +40,10 @@ public class User {
 
     public boolean isActive() {
         return status == UserStatus.ACTIVE && deletedAt == null;
+    }
+
+    public boolean isDeactivated() {
+        return status == UserStatus.DEACTIVATED && deletedAt == null;
     }
 
     public GlobalRole getEffectiveGlobalRole() {

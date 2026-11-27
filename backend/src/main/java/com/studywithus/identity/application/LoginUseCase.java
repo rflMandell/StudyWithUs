@@ -5,6 +5,7 @@ import com.studywithus.identity.domain.RefreshTokenRepository;
 import com.studywithus.identity.domain.User;
 import com.studywithus.identity.domain.UserCredential;
 import com.studywithus.identity.domain.UserRepository;
+import com.studywithus.identity.domain.UserStatus;
 import com.studywithus.shared.application.UseCase;
 import com.studywithus.shared.domain.DomainException;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,9 @@ public class LoginUseCase implements UseCase<LoginCommand, AuthResult> {
         User user = userRepository.findByUsernameOrEmail(identifier)
                 .orElseThrow(() -> new DomainException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid username/email or password"));
 
-        if (!user.isActive()) {
+        if (user.getStatus() == UserStatus.SUSPENDED
+                || user.getStatus() == UserStatus.DELETED
+                || user.getDeletedAt() != null) {
             throw new DomainException(HttpStatus.FORBIDDEN, "USER_SUSPENDED", "User account is suspended or deleted");
         }
 
@@ -55,6 +58,12 @@ public class LoginUseCase implements UseCase<LoginCommand, AuthResult> {
         }
 
         Instant now = Instant.now();
+        if (user.isDeactivated()) {
+            user.setStatus(UserStatus.ACTIVE);
+            user.setDeactivatedAt(null);
+            user.setUpdatedAt(now);
+            userRepository.save(user);
+        }
         String accessToken = twoFactorVerified
                 ? tokenService.generateAccessToken(user, true)
                 : tokenService.generateAccessToken(user);

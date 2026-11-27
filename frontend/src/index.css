@@ -4,14 +4,43 @@
   --primary-light: #eef2ff;
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg-secondary-hover: #e2e8f0;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --border: #e2e8f0;
   --danger: #ef4444;
   --danger-light: #fef2f2;
+  --danger-text: #991b1b;
+  --danger-border: #fecaca;
   --success: #10b981;
   --success-light: #ecfdf5;
+  --warning-light: #fffbeb;
+  --warning-text: #92400e;
+  --warning-border: #fde68a;
   --radius: 10px;
+}
+
+[data-theme="dark"] {
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --primary-light: #1e1b4b;
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --bg-secondary: #334155;
+  --bg-secondary-hover: #475569;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --danger: #f87171;
+  --danger-light: #450a0a;
+  --danger-text: #fca5a5;
+  --danger-border: #7f1d1d;
+  --success: #34d399;
+  --success-light: #064e3b;
+  --warning-light: rgba(217, 119, 6, 0.16);
+  --warning-text: #fbbf24;
+  --warning-border: rgba(217, 119, 6, 0.35);
 }
 
 * {
@@ -49,7 +78,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg-main) 100%);
 }
 
 .auth-card {
@@ -90,7 +119,7 @@ a:hover {
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.4rem;
-  color: #334155;
+  color: var(--text-main);
 }
 
 .form-control {
@@ -99,7 +128,8 @@ a:hover {
   font-size: 0.95rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background-color: #fff;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -137,18 +167,18 @@ a:hover {
 }
 
 .btn-secondary {
-  background-color: #f1f5f9;
-  color: #334155;
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
 }
-.btn-secondary:hover {
-  background-color: #e2e8f0;
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-secondary-hover);
 }
 
 /* Alerts */
 .alert-error {
   background-color: var(--danger-light);
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
   padding: 0.85rem 1rem;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -160,7 +190,7 @@ a:hover {
 
 /* Navbar */
 .navbar {
-  background: #fff;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   padding: 1rem 1.5rem;
 }
@@ -202,7 +232,7 @@ a:hover {
 }
 
 .card {
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;

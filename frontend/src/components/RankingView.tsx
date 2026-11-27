@@ -146,8 +146,8 @@ export const RankingView: React.FC<RankingViewProps> = ({
                   style={{
                     textAlign: 'center',
                     padding: '1.5rem 1rem',
-                    border: entry.position === 1 ? '2px solid #fde047' : '1px solid var(--border)',
-                    backgroundColor: entry.position === 1 ? '#fefce8' : '#ffffff',
+                    border: entry.position === 1 ? '2px solid #eab308' : '1px solid var(--border)',
+                    backgroundColor: entry.position === 1 ? 'var(--primary-light)' : 'var(--bg-card)',
                   }}
                 >
                   <div style={{ marginBottom: '0.5rem' }}>
@@ -161,8 +161,8 @@ export const RankingView: React.FC<RankingViewProps> = ({
                   <span
                     className="user-badge"
                     style={{
-                      backgroundColor: entry.position === 1 ? '#fef08a' : '#f1f5f9',
-                      color: entry.position === 1 ? '#854d0e' : '#475569',
+                      backgroundColor: entry.position === 1 ? '#fef08a' : 'var(--bg-secondary)',
+                      color: entry.position === 1 ? '#854d0e' : 'var(--text-muted)',
                       fontWeight: 700,
                       marginBottom: '0.5rem',
                     }}
@@ -203,9 +203,9 @@ export const RankingView: React.FC<RankingViewProps> = ({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '0.85rem 1rem',
-                      backgroundColor: isCurrentUser ? '#eff6ff' : '#f8fafc',
+                      backgroundColor: isCurrentUser ? 'var(--primary-light)' : 'var(--bg-main)',
                       borderRadius: '6px',
-                      border: isCurrentUser ? '1px solid #bfdbfe' : '1px solid var(--border)',
+                      border: isCurrentUser ? '1px solid var(--primary)' : '1px solid var(--border)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

@@ -70,6 +70,16 @@ public class UserJpaEntity {
     @Builder.Default
     private GlobalRole globalRole = GlobalRole.USER;
 
+    @Column(name = "is_private", nullable = false)
+    @Builder.Default
+    private boolean isPrivate = false;
+
+    @Column(name = "privacy_updated_at")
+    private Instant privacyUpdatedAt;
+
+    @Column(name = "deactivated_at")
+    private Instant deactivatedAt;
+
     @Column(name = "lifetime_points", nullable = false)
     private long lifetimePoints;
 
@@ -96,6 +106,9 @@ public class UserJpaEntity {
                 .bio(bio)
                 .status(status)
                 .globalRole(globalRole != null ? globalRole : GlobalRole.USER)
+                .isPrivate(isPrivate)
+                .privacyUpdatedAt(privacyUpdatedAt)
+                .deactivatedAt(deactivatedAt)
                 .lifetimePoints(lifetimePoints)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
@@ -117,6 +130,9 @@ public class UserJpaEntity {
                 .bio(user.getBio())
                 .status(user.getStatus())
                 .globalRole(user.getEffectiveGlobalRole())
+                .isPrivate(user.isPrivate())
+                .privacyUpdatedAt(user.getPrivacyUpdatedAt())
+                .deactivatedAt(user.getDeactivatedAt())
                 .lifetimePoints(user.getLifetimePoints())
                 .createdAt(user.getCreatedAt() != null ? user.getCreatedAt() : Instant.now())
                 .updatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt() : Instant.now())

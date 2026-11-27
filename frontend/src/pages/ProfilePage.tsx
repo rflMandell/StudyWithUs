@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Edit3,
   Flame,
+  Lock,
   School,
   Sparkles,
   Upload,
@@ -181,6 +182,8 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
+  const isRestrictedPrivateProfile = !isOwnProfile && !!profile.isPrivate;
+
   return (
     <div>
       <Navbar />
@@ -299,44 +302,48 @@ export const ProfilePage: React.FC = () => {
                   <h1 style={{ fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.025em' }}>
                     {profile.name}
                   </h1>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      backgroundColor: '#ecfdf5',
-                      color: '#059669',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '9999px',
-                    }}
-                  >
-                    Ativo
-                  </span>
-                  {profile.level != null && (
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        backgroundColor: '#eef2ff',
-                        color: '#4338ca',
-                        padding: '0.15rem 0.55rem',
-                        borderRadius: '9999px',
-                      }}
-                    >
-                      Nível {profile.level} {profile.activeTitle ? `• ${profile.activeTitle}` : ''}
-                    </span>
+                  {!isRestrictedPrivateProfile && (
+                    <>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          backgroundColor: '#ecfdf5',
+                          color: '#059669',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '9999px',
+                        }}
+                      >
+                        Ativo
+                      </span>
+                      {profile.level != null && (
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            backgroundColor: '#eef2ff',
+                            color: '#4338ca',
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '9999px',
+                          }}
+                        >
+                          Nível {profile.level} {profile.activeTitle ? `• ${profile.activeTitle}` : ''}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '0.15rem' }}>
                   @{profile.username}
                 </p>
-                {profile.level != null && profile.nextLevelXp != null && (
+                {!isRestrictedPrivateProfile && profile.level != null && profile.nextLevelXp != null && (
                   <div style={{ marginTop: '0.6rem', maxWidth: '320px' }}>
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         fontSize: '0.75rem',
-                        color: '#475569',
+                        color: 'var(--text-muted)',
                         marginBottom: '0.25rem',
                       }}
                     >
@@ -347,7 +354,7 @@ export const ProfilePage: React.FC = () => {
                       style={{
                         width: '100%',
                         height: '8px',
-                        backgroundColor: '#e2e8f0',
+                        backgroundColor: 'var(--bg-secondary)',
                         borderRadius: '9999px',
                         overflow: 'hidden',
                       }}
@@ -356,7 +363,7 @@ export const ProfilePage: React.FC = () => {
                         style={{
                           width: `${Math.min(Math.max(profile.progressPercent ?? 0, 0), 100)}%`,
                           height: '100%',
-                          backgroundColor: '#4f46e5',
+                          backgroundColor: 'var(--primary)',
                           borderRadius: '9999px',
                           transition: 'width 0.3s ease',
                         }}
@@ -365,7 +372,7 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 )}
                 {profile.bio && (
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.95rem', color: '#334155', maxWidth: '600px' }}>
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.95rem', color: 'var(--text-main)', maxWidth: '600px' }}>
                     {profile.bio}
                   </p>
                 )}
@@ -533,6 +540,24 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
 
+        {isRestrictedPrivateProfile ? (
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '1.5rem',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <Lock size={20} color="var(--primary)" />
+            <p style={{ fontWeight: 500 }}>
+              Conta Privada — Apenas informações básicas estão visíveis
+            </p>
+          </div>
+        ) : (
+          <>
         {/* Consolidated Statistics Grid */}
         <div className="grid-cards" style={{ marginBottom: '2rem' }}>
           {/* Points */}
@@ -644,15 +669,15 @@ export const ProfilePage: React.FC = () => {
                   <div
                     key={badge.badgeId}
                     style={{
-                      border: '1px solid var(--border)',
+                      border: '1px solid var(--warning-border)',
                       borderRadius: '8px',
                       padding: '0.75rem',
                       textAlign: 'center',
-                      backgroundColor: '#fffbeb',
+                      backgroundColor: 'var(--warning-light)',
                     }}
                   >
                     <div style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>🏆</div>
-                    <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#92400e' }}>{badge.name}</p>
+                    <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--warning-text)' }}>{badge.name}</p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                       {badge.description}
                     </p>
@@ -662,6 +687,8 @@ export const ProfilePage: React.FC = () => {
             )}
           </div>
         </div>
+          </>
+        )}
       </main>
 
       {isAvatarModalOpen && profile.avatarUrl && (

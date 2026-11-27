@@ -55,11 +55,14 @@ public class GetCommunityRankingUseCase {
         List<RankingEntryResult> results = new ArrayList<>();
         for (RankingEntry entry : pagedEntries.content()) {
             User user = userMap.get(entry.getUserId());
+            if (user == null || !user.isActive()) {
+                continue;
+            }
             results.add(RankingEntryResult.of(
                     entry,
-                    user != null ? user.getUsername() : "usuario",
-                    user != null ? user.getName() : "Usuário",
-                    user != null ? user.getAvatarUrl() : null
+                    user.getUsername(),
+                    user.getName(),
+                    user.getAvatarUrl()
             ));
         }
 

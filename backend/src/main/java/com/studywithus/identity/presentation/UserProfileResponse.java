@@ -21,6 +21,8 @@ public record UserProfileResponse(
         String course,
         String studyGoal,
         String bio,
+        boolean isPrivate,
+        Instant privacyUpdatedAt,
         UserStatus status,
         GlobalRole globalRole,
         long currentPoints,
@@ -48,6 +50,40 @@ public record UserProfileResponse(
     }
 
     private static UserProfileResponse from(UserProfileResult result, boolean includePrivateFields) {
+        if (!includePrivateFields && result.isPrivate()) {
+            return new UserProfileResponse(
+                    result.id(),
+                    result.username(),
+                    result.name(),
+                    null,
+                    null,
+                    result.avatarUrl(),
+                    null,
+                    null,
+                    null,
+                    result.bio(),
+                    true,
+                    null,
+                    result.status(),
+                    null,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    List.of(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.0,
+                    null,
+                    null,
+                    null
+            );
+        }
+
         List<UserBadgeResponse> badgeResponses = result.badges() != null
                 ? result.badges().stream().map(b -> new UserBadgeResponse(
                         b.getBadgeId(),
@@ -69,6 +105,8 @@ public record UserProfileResponse(
                 result.course(),
                 result.studyGoal(),
                 result.bio(),
+                result.isPrivate(),
+                includePrivateFields ? result.privacyUpdatedAt() : null,
                 result.status(),
                 includePrivateFields ? result.globalRole() : null,
                 result.currentPoints(),

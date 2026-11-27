@@ -78,7 +78,7 @@ export const RealtimeNotificationToast: React.FC = () => {
             padding: '0.875rem 1rem',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
             borderLeft: '4px solid var(--primary)',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--bg-card)',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '0.75rem',

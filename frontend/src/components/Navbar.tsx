@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, LogOut, Award, User as UserIcon, Users, ShieldCheck } from 'lucide-react';
+import { BookOpen, LogOut, Award, User as UserIcon, Users, ShieldCheck, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { isAdminRole } from '../services/adminService';
 
@@ -56,6 +56,20 @@ export const Navbar: React.FC = () => {
               >
                 <UserIcon size={16} />
                 <span>Perfil</span>
+              </Link>
+              <Link
+                to="/settings"
+                style={{
+                  fontWeight: 500,
+                  fontSize: '0.925rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  color: location.pathname.startsWith('/settings') ? 'var(--primary)' : 'var(--text-muted)',
+                }}
+              >
+                <Settings size={16} />
+                <span>Configurações</span>
               </Link>
               {isAdminRole(user.globalRole) && (
                 <Link

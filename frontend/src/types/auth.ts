@@ -19,7 +19,9 @@ export interface User {
   course?: string;
   studyGoal?: string;
   bio?: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+  status: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'DELETED';
+  isPrivate?: boolean;
+  privacyUpdatedAt?: string;
   globalRole?: GlobalRole;
   lifetimePoints: number;
   currentPoints?: number;

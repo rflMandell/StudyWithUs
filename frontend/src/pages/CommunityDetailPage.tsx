@@ -488,7 +488,7 @@ export const CommunityDetailPage: React.FC = () => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: '0.75rem 1rem',
-                          backgroundColor: '#f8fafc',
+                          backgroundColor: 'var(--bg-main)',
                           borderRadius: '6px',
                           border: '1px solid var(--border)',
                           flexWrap: 'wrap',

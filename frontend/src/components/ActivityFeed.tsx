@@ -128,7 +128,7 @@ export const ActivityFeed: React.FC = () => {
                 border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '1rem',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'var(--bg-card)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
               }}
             >
@@ -171,7 +171,7 @@ export const ActivityFeed: React.FC = () => {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)' }}>
                         {item.authorName || 'Estudante'}
                       </span>
                       {item.authorLevel != null && (
@@ -179,8 +179,8 @@ export const ActivityFeed: React.FC = () => {
                           style={{
                             fontSize: '0.7rem',
                             fontWeight: 700,
-                            backgroundColor: '#eef2ff',
-                            color: '#4338ca',
+                            backgroundColor: 'var(--primary-light)',
+                            color: 'var(--primary)',
                             padding: '0.1rem 0.45rem',
                             borderRadius: '9999px',
                           }}
@@ -205,8 +205,8 @@ export const ActivityFeed: React.FC = () => {
                         style={{
                           fontSize: '0.75rem',
                           fontWeight: 500,
-                          backgroundColor: '#f1f5f9',
-                          color: '#475569',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-muted)',
                           padding: '0.1rem 0.45rem',
                           borderRadius: '4px',
                           textDecoration: 'none',
@@ -240,8 +240,8 @@ export const ActivityFeed: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.3rem',
-                    color: '#059669',
-                    backgroundColor: '#ecfdf5',
+                    color: 'var(--success)',
+                    backgroundColor: 'var(--success-light)',
                     fontSize: '0.75rem',
                     fontWeight: 600,
                     padding: '0.2rem 0.5rem',
@@ -258,7 +258,7 @@ export const ActivityFeed: React.FC = () => {
                 <p
                   style={{
                     fontSize: '0.95rem',
-                    color: '#334155',
+                    color: 'var(--text-main)',
                     lineHeight: 1.5,
                     marginBottom: item.mediaKeys && item.mediaKeys.length > 0 ? '0.75rem' : 0,
                     whiteSpace: 'pre-line',
@@ -280,7 +280,7 @@ export const ActivityFeed: React.FC = () => {
                         maxHeight: '320px',
                         maxWidth: '100%',
                         borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
+                        border: '1px solid var(--border)',
                         objectFit: 'cover',
                       }}
                     />
@@ -293,14 +293,14 @@ export const ActivityFeed: React.FC = () => {
                     style={{
                       marginTop: '0.5rem',
                       padding: '0.5rem 0.75rem',
-                      backgroundColor: '#f8fafc',
+                      backgroundColor: 'var(--bg-main)',
                       borderRadius: '6px',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid var(--border)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
                       fontSize: '0.8rem',
-                      color: '#64748b',
+                      color: 'var(--text-muted)',
                     }}
                   >
                     <Image size={16} />
