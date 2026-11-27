@@ -48,7 +48,7 @@ describe('ActivityFeed', () => {
     vi.clearAllMocks();
   });
 
-  it('renders empty feed state when user has no activities in their communities', async () => {
+  it('renders empty feed state when user has no activities in their communities or followed users', async () => {
     vi.mocked(feedService.getFeed).mockResolvedValue({
       content: [],
       nextCursor: null,
@@ -58,9 +58,49 @@ describe('ActivityFeed', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Nenhuma atividade recente encontrada nas suas comunidades.')).toBeInTheDocument();
+      expect(screen.getByText('Feed de Atividades')).toBeInTheDocument();
+      expect(screen.getByText('Nenhuma atividade recente encontrada.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Participe de comunidades ou siga outros usuários para acompanhar os estudos no seu feed!')
+      ).toBeInTheDocument();
       expect(screen.getByText('Explorar Comunidades')).toBeInTheDocument();
     });
+  });
+
+  it('renders posts from followed users and communities with profile links', async () => {
+    vi.mocked(feedService.getFeed).mockResolvedValueOnce({
+      content: [
+        ...mockFeedItems,
+        {
+          id: 'item-followed',
+          userId: 'user-followed-99',
+          authorUsername: 'rafa_studies',
+          authorName: 'Rafael Costa',
+          authorAvatarUrl: null,
+          communityId: 'comm-2',
+          communityName: 'Cálculo I',
+          caption: 'Resumo de derivadas concluído!',
+          mediaKeys: [],
+          createdAt: '2026-11-03T15:00:00Z',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Rafael Costa')).toBeInTheDocument();
+      expect(screen.getByText('@rafa_studies')).toBeInTheDocument();
+      expect(screen.getByText('Resumo de derivadas concluído!')).toBeInTheDocument();
+    });
+
+    const authorLink = screen.getByRole('link', { name: 'Rafael Costa' });
+    expect(authorLink).toHaveAttribute('href', '/profile/user-followed-99');
+
+    const usernameLink = screen.getByRole('link', { name: '@rafa_studies' });
+    expect(usernameLink).toHaveAttribute('href', '/profile/user-followed-99');
   });
 
   it('renders feed items and handles cursor pagination correctly', async () => {

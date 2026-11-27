@@ -64,6 +64,13 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public List<User> searchActiveByNameOrUsernamePrefix(String prefix, int limit) {
+        return springDataUserRepository.searchActiveByNameOrUsernamePrefix(prefix, PageRequest.of(0, limit)).stream()
+                .map(UserJpaEntity::toDomain)
+                .toList();
+    }
+
+    @Override
     public boolean existsByUsername(String username) {
         return springDataUserRepository.existsByUsername(username);
     }

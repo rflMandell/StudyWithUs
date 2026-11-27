@@ -115,7 +115,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Unicamp')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Feed de Atividades dos Seus Grupos')).toBeInTheDocument();
+      expect(screen.getByText('Feed de Atividades')).toBeInTheDocument();
       expect(screen.getByText('Estudo concluído sobre JPA e PostgreSQL!')).toBeInTheDocument();
       expect(screen.getByText('Comunidade Java')).toBeInTheDocument();
       expect(screen.getByText('Extrato de Pontos')).toBeInTheDocument();

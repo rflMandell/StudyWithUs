@@ -89,3 +89,28 @@ export interface ApiError {
   path: string;
   traceId: string;
 }
+
+export interface UserSearchItem {
+  id: string;
+  username: string;
+  name: string;
+  avatarUrl?: string | null;
+  isPrivate: boolean;
+}
+
+export type FollowStatus = 'SELF' | 'FOLLOWING' | 'REQUESTED' | 'NONE';
+
+export interface FollowStatusResponse {
+  status: FollowStatus;
+  followersCount: number;
+  followingCount: number;
+}
+
+export interface FollowRequestItem {
+  id: string;
+  requesterId: string;
+  requesterUsername: string;
+  requesterName: string;
+  requesterAvatarUrl?: string | null;
+  createdAt: string;
+}

@@ -1,15 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   Award,
+  BookOpen,
   Camera,
+  Check,
   CheckCircle2,
+  Clock,
   Edit3,
   Flame,
   Lock,
   School,
   Sparkles,
   Upload,
+  UserCheck,
+  UserPlus,
   Users,
   X,
   Save,
@@ -17,8 +22,10 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { Navbar } from '../components/Navbar';
 import { getAvatarBorderStyle } from '../utils/levelCosmetics';
-import { User, UpdateUserData, UserBadge } from '../types/auth';
+import { FollowRequestItem, FollowStatus, User, UpdateUserData, UserBadge } from '../types/auth';
+import { FeedItem } from '../types/feed';
 import { userService } from '../services/userService';
+import { followService } from '../services/followService';
 import { mediaService } from '../services/mediaService';
 import { AlertError } from '../components/AlertError';
 
@@ -30,6 +37,14 @@ export const ProfilePage: React.FC = () => {
 
   const [profile, setProfile] = useState<User | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [checkins, setCheckins] = useState<FeedItem[]>([]);
+  const [isLoadingCheckins, setIsLoadingCheckins] = useState(false);
+  const [followStatus, setFollowStatus] = useState<FollowStatus | null>(null);
+  const [followersCount, setFollowersCount] = useState<number | null>(null);
+  const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<FollowRequestItem[]>([]);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +67,11 @@ export const ProfilePage: React.FC = () => {
   const loadProfile = async () => {
     setIsLoading(true);
     setError(null);
+    setFollowStatus(null);
+    setFollowersCount(null);
+    setFollowingCount(null);
+    setPendingRequests([]);
+    setCheckins([]);
     try {
       const targetId = isOwnProfile ? authUser?.id : userId;
       const data = await userService.getProfile(targetId);
@@ -66,11 +86,62 @@ export const ProfilePage: React.FC = () => {
         birthDate: data.birthDate || '',
       });
 
-      if (data.badges) {
-        setBadges(data.badges);
-      } else if (data.id) {
-        const badgeList = await userService.getUserBadges(data.id);
-        setBadges(badgeList);
+      let resolvedStatus: FollowStatus | null = null;
+      if (!isOwnProfile && data.id) {
+        if (typeof followService?.getFollowStatus === 'function') {
+          try {
+            const statusRes = await followService.getFollowStatus(data.id);
+            if (statusRes) {
+              resolvedStatus = statusRes.status;
+              setFollowStatus(statusRes.status);
+              setFollowersCount(statusRes.followersCount);
+              setFollowingCount(statusRes.followingCount);
+            } else {
+              resolvedStatus = 'NONE';
+              setFollowStatus('NONE');
+            }
+          } catch {
+            resolvedStatus = 'NONE';
+            setFollowStatus('NONE');
+          }
+        } else {
+          resolvedStatus = 'NONE';
+          setFollowStatus('NONE');
+        }
+      }
+
+      const restricted = !isOwnProfile && !!data.isPrivate && resolvedStatus !== 'FOLLOWING';
+
+      if (!restricted) {
+        if (data.badges) {
+          setBadges(data.badges);
+        } else if (data.id && typeof userService.getUserBadges === 'function') {
+          const badgeList = await userService.getUserBadges(data.id);
+          setBadges(badgeList);
+        }
+
+        if (data.id && typeof userService.getUserCheckins === 'function') {
+          setIsLoadingCheckins(true);
+          try {
+            const userCheckins = await userService.getUserCheckins(data.id);
+            setCheckins(Array.isArray(userCheckins) ? userCheckins : []);
+          } catch {
+            setCheckins([]);
+          } finally {
+            setIsLoadingCheckins(false);
+          }
+        }
+      } else {
+        setBadges([]);
+      }
+
+      if (isOwnProfile && typeof followService?.getPendingRequests === 'function') {
+        try {
+          const requests = await followService.getPendingRequests();
+          setPendingRequests(Array.isArray(requests) ? requests : []);
+        } catch {
+          setPendingRequests([]);
+        }
       }
     } catch (err: any) {
       console.error('Erro ao carregar perfil:', err);
@@ -160,6 +231,74 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleFollowToggle = async () => {
+    if (!profile || isFollowLoading) return;
+    setIsFollowLoading(true);
+    setError(null);
+    try {
+      if (followStatus === 'FOLLOWING' || followStatus === 'REQUESTED') {
+        const res = await followService.unfollowUser(profile.id);
+        const nextStatus = res?.status ?? 'NONE';
+        setFollowStatus(nextStatus);
+        if (res?.followersCount != null) setFollowersCount(res.followersCount);
+        if (res?.followingCount != null) setFollowingCount(res.followingCount);
+        if (profile.isPrivate) {
+          setCheckins([]);
+          setBadges([]);
+        }
+      } else {
+        const res = await followService.followUser(profile.id);
+        const nextStatus = res?.status ?? (profile.isPrivate ? 'REQUESTED' : 'FOLLOWING');
+        setFollowStatus(nextStatus);
+        if (res?.followersCount != null) setFollowersCount(res.followersCount);
+        if (res?.followingCount != null) setFollowingCount(res.followingCount);
+        if (nextStatus === 'FOLLOWING' && typeof userService.getUserCheckins === 'function') {
+          setIsLoadingCheckins(true);
+          try {
+            const userCheckins = await userService.getUserCheckins(profile.id);
+            setCheckins(Array.isArray(userCheckins) ? userCheckins : []);
+          } catch {
+            setCheckins([]);
+          } finally {
+            setIsLoadingCheckins(false);
+          }
+        }
+      }
+    } catch {
+      setError('Não foi possível atualizar o status de seguidor.');
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    if (processingRequestId) return;
+    setProcessingRequestId(requestId);
+    setError(null);
+    try {
+      await followService.acceptRequest(requestId);
+      setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
+    } catch {
+      setError('Não foi possível aceitar a solicitação.');
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    if (processingRequestId) return;
+    setProcessingRequestId(requestId);
+    setError(null);
+    try {
+      await followService.rejectRequest(requestId);
+      setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
+    } catch {
+      setError('Não foi possível recusar a solicitação.');
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div>
@@ -182,7 +321,7 @@ export const ProfilePage: React.FC = () => {
     );
   }
 
-  const isRestrictedPrivateProfile = !isOwnProfile && !!profile.isPrivate;
+  const isRestrictedPrivateProfile = !isOwnProfile && !!profile.isPrivate && followStatus !== 'FOLLOWING';
 
   return (
     <div>
@@ -336,6 +475,12 @@ export const ProfilePage: React.FC = () => {
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '0.15rem' }}>
                   @{profile.username}
                 </p>
+                {followersCount !== null && followingCount !== null && (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    <strong style={{ color: 'var(--text-main)' }}>{followersCount}</strong> seguidores •{' '}
+                    <strong style={{ color: 'var(--text-main)' }}>{followingCount}</strong> seguindo
+                  </p>
+                )}
                 {!isRestrictedPrivateProfile && profile.level != null && profile.nextLevelXp != null && (
                   <div style={{ marginTop: '0.6rem', maxWidth: '320px' }}>
                     <div
@@ -379,7 +524,7 @@ export const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {isOwnProfile && (
+            {isOwnProfile ? (
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className={isEditing ? 'btn btn-secondary' : 'btn btn-primary'}
@@ -397,6 +542,34 @@ export const ProfilePage: React.FC = () => {
                   </>
                 )}
               </button>
+            ) : (
+              followStatus &&
+              followStatus !== 'SELF' && (
+                <button
+                  type="button"
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  className={followStatus === 'NONE' ? 'btn btn-primary' : 'btn btn-secondary'}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', width: 'auto' }}
+                >
+                  {followStatus === 'FOLLOWING' ? (
+                    <>
+                      <UserCheck size={16} />
+                      <span>Seguindo</span>
+                    </>
+                  ) : followStatus === 'REQUESTED' ? (
+                    <>
+                      <Clock size={16} />
+                      <span>Solicitado</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} />
+                      <span>{profile.isPrivate ? 'Solicitar para seguir' : 'Seguir'}</span>
+                    </>
+                  )}
+                </button>
+              )
             )}
           </div>
 
@@ -539,6 +712,87 @@ export const ProfilePage: React.FC = () => {
             </form>
           )}
         </div>
+
+        {/* Pending Follow Requests (Own Profile) */}
+        {isOwnProfile && pendingRequests.length > 0 && (
+          <div className="card" style={{ marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', color: 'var(--primary)' }}>
+              <UserPlus size={20} />
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Solicitações para seguir</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {pendingRequests.map((req) => (
+                <div
+                  key={req.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {req.requesterAvatarUrl ? (
+                        <img
+                          src={req.requesterAvatarUrl}
+                          alt={req.requesterName}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        req.requesterName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{req.requesterName}</p>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{req.requesterUsername}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleAcceptRequest(req.id)}
+                      disabled={processingRequestId === req.id}
+                      className="btn btn-primary"
+                      style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem', gap: '0.3rem' }}
+                    >
+                      <Check size={14} />
+                      <span>Aceitar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRejectRequest(req.id)}
+                      disabled={processingRequestId === req.id}
+                      className="btn btn-secondary"
+                      style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem', gap: '0.3rem' }}
+                    >
+                      <X size={14} />
+                      <span>Recusar</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {isRestrictedPrivateProfile ? (
           <div
@@ -686,6 +940,90 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* User Study Check-ins */}
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', color: 'var(--primary)' }}>
+            <BookOpen size={20} />
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Publicações de Estudo</h2>
+          </div>
+
+          {isLoadingCheckins ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem 0' }}>
+              Carregando publicações...
+            </p>
+          ) : checkins.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '1.5rem 0' }}>
+              Nenhuma publicação ainda.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {checkins.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-card)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {item.communityName ? (
+                      <Link
+                        to={`/communities/${item.communityId}`}
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 500,
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-muted)',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                        }}
+                      >
+                        <Users size={12} />
+                        {item.communityName}
+                      </Link>
+                    ) : (
+                      <span />
+                    )}
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Clock size={12} />
+                      {new Date(item.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {item.caption && (
+                    <p style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                      {item.caption}
+                    </p>
+                  )}
+                  {item.mediaUrls && item.mediaUrls.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.6rem' }}>
+                      {item.mediaUrls.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`Foto da publicação ${idx + 1}`}
+                          style={{
+                            maxHeight: '240px',
+                            maxWidth: '100%',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border)',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
           </>
         )}

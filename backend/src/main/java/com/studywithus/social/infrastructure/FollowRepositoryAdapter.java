@@ -39,4 +39,14 @@ public class FollowRepositoryAdapter implements FollowRepository {
     public void deleteByFollowerIdAndFollowingId(UUID followerId, UUID followingId) {
         repository.deleteById(new FollowId(followerId, followingId));
     }
+
+    @Override
+    public long countByFollowingId(UUID followingId) {
+        return repository.countByFollowingId(followingId);
+    }
+
+    @Override
+    public long countByFollowerId(UUID followerId) {
+        return repository.countByFollowerId(followerId);
+    }
 }

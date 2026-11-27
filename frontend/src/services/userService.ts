@@ -1,5 +1,6 @@
 import { api } from './api';
-import { User, UpdateUserData, UserBadge } from '../types/auth';
+import { User, UpdateUserData, UserBadge, UserSearchItem } from '../types/auth';
+import { FeedItem } from '../types/feed';
 
 export const userService = {
   getProfile: async (userId?: string): Promise<User> => {
@@ -47,5 +48,19 @@ export const userService = {
 
   deleteAccount: async (): Promise<void> => {
     await api.delete('/users/me');
+  },
+
+  searchUsers: async (query: string, limit = 10): Promise<UserSearchItem[]> => {
+    const response = await api.get<UserSearchItem[]>('/users/search', {
+      params: { q: query, limit },
+    });
+    return response.data;
+  },
+
+  getUserCheckins: async (userId: string, limit = 20): Promise<FeedItem[]> => {
+    const response = await api.get<FeedItem[]>(`/users/${userId}/checkins`, {
+      params: { limit },
+    });
+    return response.data;
   },
 };

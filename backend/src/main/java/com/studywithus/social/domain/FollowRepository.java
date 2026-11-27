@@ -9,4 +9,6 @@ public interface FollowRepository {
     List<UUID> findFollowerIdsByFollowingId(UUID followingId);
     boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
     void deleteByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
+    long countByFollowingId(UUID followingId);
+    long countByFollowerId(UUID followerId);
 }

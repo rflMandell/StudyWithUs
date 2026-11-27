@@ -63,7 +63,7 @@ export const ActivityFeed: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <Newspaper size={22} color="var(--primary)" />
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Feed de Atividades dos Seus Grupos</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Feed de Atividades</h2>
         </div>
         <button
           onClick={loadInitialFeed}
@@ -87,7 +87,7 @@ export const ActivityFeed: React.FC = () => {
 
       {isLoading ? (
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
-          Carregando atividades dos grupos...
+          Carregando atividades...
         </p>
       ) : error ? (
         <div
@@ -105,10 +105,10 @@ export const ActivityFeed: React.FC = () => {
       ) : items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.75rem' }}>
-            Nenhuma atividade recente encontrada nas suas comunidades.
+            Nenhuma atividade recente encontrada.
           </p>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-            Participe de comunidades e faça check-ins para acompanhar os estudos dos colegas!
+            Participe de comunidades ou siga outros usuários para acompanhar os estudos no seu feed!
           </p>
           <Link
             to="/communities"
@@ -171,9 +171,17 @@ export const ActivityFeed: React.FC = () => {
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                      <Link
+                        to={`/profile/${item.userId}`}
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          color: 'var(--text-main)',
+                          textDecoration: 'none',
+                        }}
+                      >
                         {item.authorName || 'Estudante'}
-                      </span>
+                      </Link>
                       {item.authorLevel != null && (
                         <span
                           style={{
@@ -194,9 +202,12 @@ export const ActivityFeed: React.FC = () => {
                         </span>
                       )}
                       {item.authorUsername && (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        <Link
+                          to={`/profile/${item.userId}`}
+                          style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'none' }}
+                        >
                           @{item.authorUsername}
-                        </span>
+                        </Link>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>

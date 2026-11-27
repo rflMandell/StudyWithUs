@@ -118,4 +118,10 @@ public interface SpringDataCheckinRepository extends JpaRepository<CheckinJpaEnt
 
     @Query("SELECT c FROM CheckinJpaEntity c WHERE c.id = :id")
     Optional<CheckinJpaEntity> findByIdIncludingDeleted(@Param("id") UUID id);
+
+    @Query("SELECT c FROM CheckinJpaEntity c WHERE c.userId = :userId AND c.deletedAt IS NULL AND EXISTS (SELECT 1 FROM CommunityJpaEntity comm WHERE comm.id = c.communityId AND comm.deletedAt IS NULL) ORDER BY c.createdAt DESC, c.id DESC")
+    List<CheckinJpaEntity> findActiveUserCheckinsInActiveCommunities(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("SELECT c FROM CheckinJpaEntity c WHERE c.userId = :userId AND c.deletedAt IS NULL AND EXISTS (SELECT 1 FROM CommunityJpaEntity comm WHERE comm.id = c.communityId AND comm.deletedAt IS NULL AND comm.visibility = com.studywithus.community.domain.CommunityVisibility.PUBLIC) ORDER BY c.createdAt DESC, c.id DESC")
+    List<CheckinJpaEntity> findActiveUserCheckinsInPublicCommunities(@Param("userId") UUID userId, Pageable pageable);
 }

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, LogOut, Award, User as UserIcon, Users, ShieldCheck, Settings } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { isAdminRole } from '../services/adminService';
+import { UserSearchBar } from './UserSearchBar';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -90,6 +91,8 @@ export const Navbar: React.FC = () => {
             </nav>
           )}
         </div>
+
+        {user && <UserSearchBar />}
 
         {user && (
           <div className="navbar-user">

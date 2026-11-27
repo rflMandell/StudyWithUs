@@ -31,4 +31,8 @@ public interface CheckinRepository {
     default Optional<Checkin> findByIdIncludingDeleted(UUID id) {
         return findById(id);
     }
+
+    default List<Checkin> findUserCheckins(UUID userId, boolean includePrivateCommunities, int limit) {
+        return List.of();
+    }
 }

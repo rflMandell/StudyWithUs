@@ -3,7 +3,9 @@ package com.studywithus.social.presentation;
 import com.studywithus.identity.infrastructure.SecurityUserPrincipal;
 import com.studywithus.media.domain.ObjectStoragePort;
 import com.studywithus.social.application.FeedCursorResult;
+import com.studywithus.social.application.FeedItemResult;
 import com.studywithus.social.application.GetCommunityFeedUseCase;
+import com.studywithus.social.application.GetUserCheckinsUseCase;
 import com.studywithus.social.application.GetUserFeedQuery;
 import com.studywithus.social.application.GetUserFeedUseCase;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +27,7 @@ public class FeedController {
 
     private final GetUserFeedUseCase getUserFeedUseCase;
     private final GetCommunityFeedUseCase getCommunityFeedUseCase;
+    private final GetUserCheckinsUseCase getUserCheckinsUseCase;
     private final ObjectStoragePort objectStoragePort;
 
     @GetMapping("/feed")
@@ -51,5 +55,19 @@ public class FeedController {
         UUID callerId = principal != null ? principal.getId() : null;
         FeedCursorResult result = getCommunityFeedUseCase.execute(communityId, callerId, cursor, limit);
         return ResponseEntity.ok(FeedResponse.from(result, objectStoragePort::getPublicUrl));
+    }
+
+    @GetMapping("/users/{userId}/checkins")
+    public ResponseEntity<List<FeedItemResponse>> getUserCheckins(
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "20") int limit,
+            @AuthenticationPrincipal SecurityUserPrincipal principal
+    ) {
+        UUID callerId = principal != null ? principal.getId() : null;
+        List<FeedItemResult> items = getUserCheckinsUseCase.execute(userId, callerId, limit);
+        List<FeedItemResponse> response = items.stream()
+                .map(item -> FeedItemResponse.from(item, objectStoragePort::getPublicUrl))
+                .toList();
+        return ResponseEntity.ok(response);
     }
 }

@@ -14,6 +14,7 @@ public interface UserRepository {
     Optional<User> findByUsernameOrEmail(String usernameOrEmail);
     List<User> findAllById(Iterable<UUID> ids);
     PagedResult<User> findAll(int page, int size);
+    List<User> searchActiveByNameOrUsernamePrefix(String prefix, int limit);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 

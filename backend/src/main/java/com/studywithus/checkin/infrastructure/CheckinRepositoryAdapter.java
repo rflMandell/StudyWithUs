@@ -171,4 +171,13 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
     public Optional<Checkin> findByIdIncludingDeleted(UUID id) {
         return repository.findByIdIncludingDeleted(id).map(CheckinJpaEntity::toDomain);
     }
+
+    @Override
+    public List<Checkin> findUserCheckins(UUID userId, boolean includePrivateCommunities, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<CheckinJpaEntity> entities = includePrivateCommunities
+                ? repository.findActiveUserCheckinsInActiveCommunities(userId, pageable)
+                : repository.findActiveUserCheckinsInPublicCommunities(userId, pageable);
+        return entities.stream().map(CheckinJpaEntity::toDomain).toList();
+    }
 }

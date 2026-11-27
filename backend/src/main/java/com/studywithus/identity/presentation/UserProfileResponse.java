@@ -42,15 +42,19 @@ public record UserProfileResponse(
         Instant createdAt
 ) {
     public static UserProfileResponse from(UserProfileResult result) {
-        return from(result, true);
+        return from(result, true, true);
     }
 
     public static UserProfileResponse fromPublic(UserProfileResult result) {
-        return from(result, false);
+        return fromPublic(result, false);
     }
 
-    private static UserProfileResponse from(UserProfileResult result, boolean includePrivateFields) {
-        if (!includePrivateFields && result.isPrivate()) {
+    public static UserProfileResponse fromPublic(UserProfileResult result, boolean isFollowing) {
+        return from(result, false, isFollowing);
+    }
+
+    private static UserProfileResponse from(UserProfileResult result, boolean includePrivateFields, boolean isFollowing) {
+        if (!includePrivateFields && result.isPrivate() && !isFollowing) {
             return new UserProfileResponse(
                     result.id(),
                     result.username(),
