@@ -16,6 +16,9 @@ public class StreakEventListener {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         log.info("StreakEventListener received CheckinCreatedEvent for userId: {}, communityId: {}",
                 event.userId(), event.communityId());
         try {
@@ -31,6 +34,9 @@ public class StreakEventListener {
 
     @EventListener
     public void onCheckinDeleted(CheckinDeletedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         log.info("StreakEventListener received CheckinDeletedEvent for userId: {}, communityId: {}",
                 event.userId(), event.communityId());
         try {

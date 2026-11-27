@@ -18,6 +18,7 @@ public record CheckinResponse(
         long commentsCount,
         long likesCount,
         boolean likedByCurrentUser,
+        boolean countsAsCheckin,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -39,6 +40,7 @@ public record CheckinResponse(
                 result.commentsCount(),
                 result.likesCount(),
                 result.likedByCurrentUser(),
+                result.countsAsCheckin(),
                 result.createdAt(),
                 result.updatedAt()
         );

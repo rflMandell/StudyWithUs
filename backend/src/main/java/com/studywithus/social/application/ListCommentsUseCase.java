@@ -69,17 +69,19 @@ public class ListCommentsUseCase {
                 .filter(Checkin::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
 
-        Community community = communityRepository.findById(checkin.getCommunityId())
-                .filter(Community::isActive)
-                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
+        if (checkin.getCommunityId() != null) {
+            Community community = communityRepository.findById(checkin.getCommunityId())
+                    .filter(Community::isActive)
+                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
 
-        if (community.getVisibility() == CommunityVisibility.PRIVATE) {
-            if (query.callerId() == null || !communityMemberRepository.isUserActiveMember(community.getId(), query.callerId())) {
-                throw new DomainException(
-                        HttpStatus.FORBIDDEN,
-                        "COMMUNITY_NOT_A_MEMBER",
-                        "Apenas membros ativos da comunidade podem visualizar comentários deste check-in"
-                );
+            if (community.getVisibility() == CommunityVisibility.PRIVATE) {
+                if (query.callerId() == null || !communityMemberRepository.isUserActiveMember(community.getId(), query.callerId())) {
+                    throw new DomainException(
+                            HttpStatus.FORBIDDEN,
+                            "COMMUNITY_NOT_A_MEMBER",
+                            "Apenas membros ativos da comunidade podem visualizar comentários deste check-in"
+                    );
+                }
             }
         }
 

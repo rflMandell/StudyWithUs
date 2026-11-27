@@ -37,7 +37,7 @@ public class CheckinJpaEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "community_id", nullable = false)
+    @Column(name = "community_id")
     private UUID communityId;
 
     @Column(length = 1000)
@@ -51,6 +51,10 @@ public class CheckinJpaEntity {
 
     @Column(name = "tags_csv", length = 500)
     private String tagsCsv;
+
+    @Builder.Default
+    @Column(name = "counts_as_checkin", nullable = false)
+    private boolean countsAsCheckin = true;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -78,6 +82,7 @@ public class CheckinJpaEntity {
                 .tagsCsv(domain.getTags() != null && !domain.getTags().isEmpty()
                         ? String.join(",", domain.getTags())
                         : null)
+                .countsAsCheckin(domain.isCountsAsCheckin())
                 .createdAt(domain.getCreatedAt())
                 .updatedAt(domain.getUpdatedAt())
                 .deletedAt(domain.getDeletedAt())
@@ -126,6 +131,7 @@ public class CheckinJpaEntity {
                 .subject(this.subject)
                 .tags(tagList)
                 .durationMinutes(this.durationMinutes)
+                .countsAsCheckin(this.countsAsCheckin)
                 .media(mediaDomain)
                 .createdAt(this.createdAt)
                 .updatedAt(this.updatedAt)

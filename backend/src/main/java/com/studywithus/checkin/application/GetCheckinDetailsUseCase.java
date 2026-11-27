@@ -56,17 +56,19 @@ public class GetCheckinDetailsUseCase implements UseCase<UUID, CheckinResult> {
                 .filter(Checkin::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Checkin not found"));
 
-        Community community = communityRepository.findById(checkin.getCommunityId())
-                .filter(Community::isActive)
-                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
+        if (checkin.getCommunityId() != null) {
+            Community community = communityRepository.findById(checkin.getCommunityId())
+                    .filter(Community::isActive)
+                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
 
-        if (community.isPrivate()) {
-            if (callerId == null || !communityMemberRepository.isUserActiveMember(community.getId(), callerId)) {
-                throw new DomainException(
-                        HttpStatus.FORBIDDEN,
-                        "COMMUNITY_ACCESS_DENIED",
-                        "Only active members can view check-ins of a private community"
-                );
+            if (community.isPrivate()) {
+                if (callerId == null || !communityMemberRepository.isUserActiveMember(community.getId(), callerId)) {
+                    throw new DomainException(
+                            HttpStatus.FORBIDDEN,
+                            "COMMUNITY_ACCESS_DENIED",
+                            "Only active members can view check-ins of a private community"
+                    );
+                }
             }
         }
 

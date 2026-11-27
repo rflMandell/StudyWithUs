@@ -11,7 +11,8 @@ public record CreateCheckinCommand(
         String idempotencyKey,
         String subject,
         List<String> tags,
-        Integer durationMinutes
+        Integer durationMinutes,
+        Boolean countsAsCheckin
 ) {
     public CreateCheckinCommand(
             UUID userId,
@@ -20,6 +21,19 @@ public record CreateCheckinCommand(
             List<String> mediaKeys,
             String idempotencyKey
     ) {
-        this(userId, communityId, caption, mediaKeys, idempotencyKey, null, null, null);
+        this(userId, communityId, caption, mediaKeys, idempotencyKey, null, null, null, null);
+    }
+
+    public CreateCheckinCommand(
+            UUID userId,
+            UUID communityId,
+            String caption,
+            List<String> mediaKeys,
+            String idempotencyKey,
+            String subject,
+            List<String> tags,
+            Integer durationMinutes
+    ) {
+        this(userId, communityId, caption, mediaKeys, idempotencyKey, subject, tags, durationMinutes, null);
     }
 }

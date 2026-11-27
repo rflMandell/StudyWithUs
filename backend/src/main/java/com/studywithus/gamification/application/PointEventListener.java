@@ -25,6 +25,9 @@ public class PointEventListener {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         log.info("CheckinCreatedEvent received for checkinId: {}, userId: {}", event.checkinId(), event.userId());
         try {
             awardPointsUseCase.execute(new AwardPointsCommand(
@@ -42,6 +45,9 @@ public class PointEventListener {
 
     @EventListener
     public void onCheckinDeleted(CheckinDeletedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         log.info("CheckinDeletedEvent received for checkinId: {}, userId: {}", event.checkinId(), event.userId());
         try {
             Optional<PointTransaction> originalTx = pointTransactionRepository.findByCheckinIdAndType(

@@ -25,6 +25,7 @@ public record FeedItemResponse(
         long commentsCount,
         long likesCount,
         boolean likedByCurrentUser,
+        boolean countsAsCheckin,
         Instant createdAt
 ) {
     public static FeedItemResponse from(FeedItemResult result) {
@@ -52,6 +53,7 @@ public record FeedItemResponse(
                 result.commentsCount(),
                 result.likesCount(),
                 result.likedByCurrentUser(),
+                result.countsAsCheckin(),
                 result.createdAt()
         );
     }

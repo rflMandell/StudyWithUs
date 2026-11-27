@@ -54,6 +54,9 @@ public class RealtimeNotificationEventListener {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (event.communityId() == null) {
+            return;
+        }
         log.info("Dispatching realtime notification for checkin created: checkinId={}, communityId={}", event.checkinId(), event.communityId());
 
         RealtimeNotification notification = RealtimeNotification.create(
@@ -87,7 +90,7 @@ public class RealtimeNotificationEventListener {
                 Map.of(
                         "checkinId", event.checkinId().toString(),
                         "likerUserId", event.likerUserId().toString(),
-                        "communityId", event.communityId().toString()
+                        "communityId", event.communityId() != null ? event.communityId().toString() : ""
                 )
         );
 
@@ -110,7 +113,7 @@ public class RealtimeNotificationEventListener {
                         "commentId", event.commentId().toString(),
                         "checkinId", event.checkinId().toString(),
                         "likerUserId", event.likerUserId().toString(),
-                        "communityId", event.communityId().toString()
+                        "communityId", event.communityId() != null ? event.communityId().toString() : ""
                 )
         );
 

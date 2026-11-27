@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -97,6 +98,7 @@ public class FeedItemHydrator {
 
         Set<UUID> communityIds = itemsToReturn.stream()
                 .map(Checkin::getCommunityId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         List<UUID> checkinIds = itemsToReturn.stream()
@@ -106,8 +108,10 @@ public class FeedItemHydrator {
         Map<UUID, User> userMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
-        Map<UUID, Community> communityMap = communityRepository.findAllById(communityIds).stream()
-                .collect(Collectors.toMap(Community::getId, Function.identity()));
+        Map<UUID, Community> communityMap = communityIds.isEmpty()
+                ? Collections.emptyMap()
+                : communityRepository.findAllById(communityIds).stream()
+                        .collect(Collectors.toMap(Community::getId, Function.identity()));
 
         Map<UUID, Long> commentCountsMap = commentRepository.countActiveByCheckinIds(checkinIds);
 
@@ -130,7 +134,7 @@ public class FeedItemHydrator {
         List<FeedItemResult> results = new ArrayList<>(itemsToReturn.size());
         for (Checkin c : itemsToReturn) {
             User author = userMap.get(c.getUserId());
-            Community community = communityMap.get(c.getCommunityId());
+            Community community = c.getCommunityId() != null ? communityMap.get(c.getCommunityId()) : null;
             UserLevel authorLevel = userLevelMap.get(c.getUserId());
 
             List<String> mediaKeys = c.getMedia() != null
@@ -151,12 +155,13 @@ public class FeedItemHydrator {
                     authorLevel != null ? authorLevel.getActiveTitle() : defaultTitle,
                     authorLevel != null ? authorLevel.getActiveAvatarBorder() : defaultBorder,
                     c.getCommunityId(),
-                    community != null ? community.getName() : "Comunidade",
+                    c.getCommunityId() == null ? null : (community != null ? community.getName() : "Comunidade"),
                     c.getCaption(),
                     mediaKeys,
                     commentsCount,
                     likesCount,
                     likedByCurrentUser,
+                    c.isCountsAsCheckin(),
                     c.getCreatedAt()
             ));
         }

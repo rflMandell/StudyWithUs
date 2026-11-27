@@ -102,11 +102,8 @@ public class GetUserFeedUseCase {
         List<UUID> activeCommunityIds = communityMemberRepository.findActiveCommunityIdsByUserId(query.userId());
         List<UUID> followingIds = followRepository.findFollowingIdsByFollowerId(query.userId());
 
-        if (activeCommunityIds.isEmpty() && followingIds.isEmpty()) {
-            return new FeedCursorResult(Collections.emptyList(), null, false);
-        }
-
         List<Checkin> checkins = checkinRepository.findFeedCheckins(
+                query.userId(),
                 activeCommunityIds,
                 followingIds,
                 cursorInstant,

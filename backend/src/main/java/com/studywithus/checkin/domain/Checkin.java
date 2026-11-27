@@ -26,13 +26,15 @@ public class Checkin {
     private List<String> tags = new ArrayList<>();
     private int durationMinutes;
     @Builder.Default
+    private boolean countsAsCheckin = true;
+    @Builder.Default
     private List<CheckinMedia> media = new ArrayList<>();
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
 
     public static Checkin create(UUID userId, UUID communityId, String caption, List<String> storageKeys) {
-        return create(userId, communityId, caption, storageKeys, null, null, null);
+        return create(userId, communityId, caption, storageKeys, null, null, null, true);
     }
 
     public static Checkin create(
@@ -43,6 +45,19 @@ public class Checkin {
             String subject,
             List<String> tags,
             Integer durationMinutes
+    ) {
+        return create(userId, communityId, caption, storageKeys, subject, tags, durationMinutes, true);
+    }
+
+    public static Checkin create(
+            UUID userId,
+            UUID communityId,
+            String caption,
+            List<String> storageKeys,
+            String subject,
+            List<String> tags,
+            Integer durationMinutes,
+            boolean countsAsCheckin
     ) {
         UUID checkinId = UUID.randomUUID();
         Instant now = Instant.now();
@@ -67,6 +82,7 @@ public class Checkin {
                 .subject(subject != null && !subject.isBlank() ? subject.trim() : null)
                 .tags(safeTags)
                 .durationMinutes(safeDuration)
+                .countsAsCheckin(countsAsCheckin)
                 .media(mediaList)
                 .createdAt(now)
                 .updatedAt(now)

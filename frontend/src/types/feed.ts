@@ -7,14 +7,15 @@ export interface FeedItem {
   authorLevel?: number;
   authorTitle?: string;
   authorAvatarBorder?: string;
-  communityId: string;
-  communityName?: string;
+  communityId?: string | null;
+  communityName?: string | null;
   caption: string;
   mediaKeys: string[];
   mediaUrls?: string[];
   commentsCount?: number;
   likesCount?: number;
   likedByCurrentUser?: boolean;
+  countsAsCheckin?: boolean;
   createdAt: string;
 }
 

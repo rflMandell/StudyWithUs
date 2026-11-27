@@ -150,4 +150,79 @@ describe('ActivityFeed', () => {
       expect(screen.queryByText('Carregar mais atividades')).not.toBeInTheDocument();
     });
   });
+
+  it('renders standalone posts with Post pessoal badge, image, and CommentSection without broken community link', async () => {
+    vi.mocked(feedService.getFeed).mockResolvedValueOnce({
+      content: [
+        {
+          id: 'standalone-post-1',
+          userId: 'user-1',
+          authorUsername: 'marcos_dev',
+          authorName: 'Marcos Silva',
+          authorAvatarUrl: null,
+          communityId: null,
+          communityName: null,
+          caption: 'Meu resumo individual de Banco de Dados!',
+          mediaKeys: ['uploads/checkin/db.webp'],
+          mediaUrls: ['http://localhost:9000/uploads/checkin/db.webp'],
+          commentsCount: 2,
+          likesCount: 5,
+          likedByCurrentUser: false,
+          createdAt: '2026-11-04T12:00:00Z',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Meu resumo individual de Banco de Dados!')).toBeInTheDocument();
+      expect(screen.getByText('Post pessoal')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('link', { name: /Comunidade/i })).not.toBeInTheDocument();
+    const links = screen.getAllByRole('link');
+    links.forEach((link) => {
+      expect(link.getAttribute('href')).not.toContain('/communities/null');
+    });
+
+    const img = screen.getByAltText('Foto do check-in 1') as HTMLImageElement;
+    expect(img).toHaveAttribute('src', 'http://localhost:9000/uploads/checkin/db.webp');
+
+    expect(screen.getByText('5 curtidas')).toBeInTheDocument();
+    expect(screen.getByText(/2 comentário/i)).toBeInTheDocument();
+  });
+
+  it('does not render +10 pts badge for standalone post with countsAsCheckin: false', async () => {
+    vi.mocked(feedService.getFeed).mockResolvedValueOnce({
+      content: [
+        {
+          id: 'standalone-no-pts',
+          userId: 'user-1',
+          authorUsername: 'marcos_dev',
+          authorName: 'Marcos Silva',
+          authorAvatarUrl: null,
+          communityId: null,
+          communityName: null,
+          caption: 'Post social sem check-in de estudo.',
+          mediaKeys: [],
+          countsAsCheckin: false,
+          createdAt: '2026-11-04T13:00:00Z',
+        },
+      ],
+      nextCursor: null,
+      hasMore: false,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Post social sem check-in de estudo.')).toBeInTheDocument();
+      expect(screen.getByText('Post pessoal')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('+10 pts')).not.toBeInTheDocument();
+  });
 });

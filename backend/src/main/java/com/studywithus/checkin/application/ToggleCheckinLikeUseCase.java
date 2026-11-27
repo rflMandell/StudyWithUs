@@ -32,16 +32,18 @@ public class ToggleCheckinLikeUseCase implements UseCase<ToggleCheckinLikeComman
                 .filter(Checkin::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
 
-        Community community = communityRepository.findById(checkin.getCommunityId())
-                .filter(Community::isActive)
-                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
+        if (checkin.getCommunityId() != null) {
+            Community community = communityRepository.findById(checkin.getCommunityId())
+                    .filter(Community::isActive)
+                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Comunidade não encontrada"));
 
-        if (community.isPrivate() && !communityMemberRepository.isUserActiveMember(community.getId(), command.userId())) {
-            throw new DomainException(
-                    HttpStatus.FORBIDDEN,
-                    "COMMUNITY_NOT_A_MEMBER",
-                    "Apenas membros ativos da comunidade podem curtir este check-in"
-            );
+            if (community.isPrivate() && !communityMemberRepository.isUserActiveMember(community.getId(), command.userId())) {
+                throw new DomainException(
+                        HttpStatus.FORBIDDEN,
+                        "COMMUNITY_NOT_A_MEMBER",
+                        "Apenas membros ativos da comunidade podem curtir este check-in"
+                );
+            }
         }
 
         boolean alreadyLiked = checkinLikeRepository.exists(checkin.getId(), command.userId());

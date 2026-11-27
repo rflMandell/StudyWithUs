@@ -46,6 +46,9 @@ public class BadgeEvaluator {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         log.debug("Evaluating first checkin badge criteria for user: {}", event.userId());
         awardBadgeUseCase.execute(new AwardBadgeCommand(
                 event.userId(),

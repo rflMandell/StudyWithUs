@@ -31,6 +31,9 @@ public class DeleteCheckinUseCase implements UseCase<DeleteCheckinCommand, Void>
         boolean isAuthor = checkin.isAuthor(command.actorUserId());
 
         if (!isAuthor) {
+            if (checkin.getCommunityId() == null) {
+                throw new DomainException(HttpStatus.FORBIDDEN, "CHECKIN_ACCESS_DENIED", "Only the author can delete this checkin");
+            }
             // Check if actor is an admin/moderator of the community
             CommunityMember actorMember = communityMemberRepository.findByCommunityIdAndUserId(
                     checkin.getCommunityId(),
@@ -50,7 +53,8 @@ public class DeleteCheckinUseCase implements UseCase<DeleteCheckinCommand, Void>
                 checkin.getId(),
                 checkin.getUserId(),
                 checkin.getCommunityId(),
-                command.actorUserId()
+                command.actorUserId(),
+                checkin.isCountsAsCheckin()
         ));
 
         return null;

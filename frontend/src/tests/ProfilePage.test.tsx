@@ -14,6 +14,7 @@ vi.mock('../services/userService', () => ({
     uploadAvatar: vi.fn(),
     getUserStreak: vi.fn(),
     getUserBadges: vi.fn(),
+    getUserCheckins: vi.fn(),
   },
 }));
 
@@ -21,6 +22,13 @@ vi.mock('../services/mediaService', () => ({
   mediaService: {
     validateImageFile: vi.fn(),
     uploadImage: vi.fn(),
+  },
+}));
+
+vi.mock('../services/followService', () => ({
+  followService: {
+    getPendingRequests: vi.fn().mockResolvedValue([]),
+    getFollowStatus: vi.fn(),
   },
 }));
 
@@ -156,6 +164,12 @@ describe('ProfilePage', () => {
     renderComponent();
 
     await waitFor(() => {
+      expect(screen.getByText('Editar Perfil')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Editar Perfil'));
+
+    await waitFor(() => {
       expect(screen.getByLabelText('Selecionar foto de perfil')).toBeInTheDocument();
     });
 
@@ -169,5 +183,38 @@ describe('ProfilePage', () => {
       expect(mockAuthContext.updateUser).toHaveBeenCalledWith(updatedWithAvatar);
       expect(screen.getByText('Foto de perfil atualizada com sucesso!')).toBeInTheDocument();
     });
+  });
+
+  it('renders standalone posts on profile with Post pessoal badge and CommentSection', async () => {
+    vi.mocked(userService.getProfile).mockResolvedValue(mockUser);
+    vi.mocked(userService.getUserCheckins).mockResolvedValue([
+      {
+        id: 'profile-standalone-1',
+        userId: mockUser.id,
+        authorUsername: mockUser.username,
+        authorName: mockUser.name,
+        communityId: null,
+        communityName: null,
+        caption: 'Post pessoal de estudo no perfil!',
+        mediaKeys: ['uploads/checkin/notes.webp'],
+        mediaUrls: ['http://localhost:9000/uploads/checkin/notes.webp'],
+        commentsCount: 3,
+        likesCount: 7,
+        likedByCurrentUser: true,
+        createdAt: '2026-11-04T15:00:00Z',
+      },
+    ]);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Publicações de Estudo')).toBeInTheDocument();
+      expect(screen.getByText('Post pessoal de estudo no perfil!')).toBeInTheDocument();
+      expect(screen.getByText('Post pessoal')).toBeInTheDocument();
+    });
+
+    const img = screen.getByAltText('Foto da publicação 1') as HTMLImageElement;
+    expect(img).toHaveAttribute('src', 'http://localhost:9000/uploads/checkin/notes.webp');
+    expect(screen.getByText('7 curtidas')).toBeInTheDocument();
   });
 });

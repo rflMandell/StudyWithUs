@@ -66,16 +66,54 @@ class GetUserFeedUseCaseTest {
     }
 
     @Test
-    void shouldReturnEmptyResultWhenUserHasNoCommunitiesAndFollowsNobody() {
+    void shouldReturnEmptyResultWhenUserHasNoCommunitiesFollowsOrStandalonePosts() {
         UUID userId = UUID.randomUUID();
         when(communityMemberRepository.findActiveCommunityIdsByUserId(userId)).thenReturn(Collections.emptyList());
         when(followRepository.findFollowingIdsByFollowerId(userId)).thenReturn(Collections.emptyList());
+        when(checkinRepository.findFeedCheckins(eq(userId), eq(Collections.emptyList()), eq(Collections.emptyList()), any(), any(), eq(21)))
+                .thenReturn(Collections.emptyList());
 
         FeedCursorResult result = useCase.execute(new GetUserFeedQuery(userId, null, 20));
 
         assertThat(result.items()).isEmpty();
         assertThat(result.hasMore()).isFalse();
         assertThat(result.nextCursor()).isNull();
+    }
+
+    @Test
+    void shouldReturnStandalonePostsWhenUserHasNoCommunitiesAndFollowsNobody() {
+        UUID userId = UUID.randomUUID();
+        when(communityMemberRepository.findActiveCommunityIdsByUserId(userId)).thenReturn(Collections.emptyList());
+        when(followRepository.findFollowingIdsByFollowerId(userId)).thenReturn(Collections.emptyList());
+
+        Instant now = Instant.now();
+        Checkin standalone = Checkin.builder()
+                .id(UUID.randomUUID())
+                .userId(userId)
+                .communityId(null)
+                .caption("Standalone study post")
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        when(checkinRepository.findFeedCheckins(eq(userId), eq(Collections.emptyList()), eq(Collections.emptyList()), any(), any(), eq(21)))
+                .thenReturn(List.of(standalone));
+
+        User author = User.builder()
+                .id(userId)
+                .username("author")
+                .name("Author User")
+                .status(UserStatus.ACTIVE)
+                .build();
+        when(userRepository.findAllById(any())).thenReturn(List.of(author));
+
+        FeedCursorResult result = useCase.execute(new GetUserFeedQuery(userId, null, 20));
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().get(0).id()).isEqualTo(standalone.getId());
+        assertThat(result.items().get(0).communityId()).isNull();
+        assertThat(result.items().get(0).communityName()).isNull();
+        org.mockito.Mockito.verifyNoInteractions(communityRepository);
     }
 
     @Test
@@ -107,7 +145,7 @@ class GetUserFeedUseCaseTest {
                 .build();
 
         // Limit is 1, so repository is requested with limit + 1 = 2 items
-        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(2)))
+        when(checkinRepository.findFeedCheckins(eq(userId), eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(2)))
                 .thenReturn(List.of(c1, c2));
 
         User author = User.builder()
@@ -159,7 +197,7 @@ class GetUserFeedUseCaseTest {
                 .updatedAt(now.minusSeconds(10))
                 .build();
 
-        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(6)))
+        when(checkinRepository.findFeedCheckins(eq(userId), eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(6)))
                 .thenReturn(List.of(c1));
 
         FeedCursorResult result = useCase.execute(new GetUserFeedQuery(userId, null, 5));
@@ -239,7 +277,7 @@ class GetUserFeedUseCaseTest {
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        when(checkinRepository.findFeedCheckins(eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(21)))
+        when(checkinRepository.findFeedCheckins(eq(userId), eq(List.of(communityId)), eq(Collections.emptyList()), any(), any(), eq(21)))
                 .thenReturn(List.of(checkin));
 
         FeedCursorResult result = cachedUseCase.execute(new GetUserFeedQuery(userId, null, 20));

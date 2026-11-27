@@ -7,7 +7,11 @@ import { useAuth } from '../hooks/useAuth';
 import { CommentSection } from './CommentSection';
 import { getAvatarBorderStyle } from '../utils/levelCosmetics';
 
-export const ActivityFeed: React.FC = () => {
+interface ActivityFeedProps {
+  refreshKey?: number;
+}
+
+export const ActivityFeed: React.FC<ActivityFeedProps> = ({ refreshKey = 0 }) => {
   const { user } = useAuth();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export const ActivityFeed: React.FC = () => {
 
   useEffect(() => {
     loadInitialFeed();
-  }, []);
+  }, [refreshKey]);
 
   return (
     <div className="card" style={{ marginBottom: '2rem' }}>
@@ -211,24 +215,41 @@ export const ActivityFeed: React.FC = () => {
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
-                      <Link
-                        to={`/communities/${item.communityId}`}
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          backgroundColor: 'var(--bg-secondary)',
-                          color: 'var(--text-muted)',
-                          padding: '0.1rem 0.45rem',
-                          borderRadius: '4px',
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                        }}
-                      >
-                        <Users size={11} />
-                        {item.communityName || 'Comunidade'}
-                      </Link>
+                      {item.communityId ? (
+                        <Link
+                          to={`/communities/${item.communityId}`}
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            backgroundColor: 'var(--bg-secondary)',
+                            color: 'var(--text-muted)',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '4px',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                          }}
+                        >
+                          <Users size={11} />
+                          {item.communityName || 'Comunidade'}
+                        </Link>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            backgroundColor: 'var(--bg-secondary)',
+                            color: 'var(--text-muted)',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '4px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          Post pessoal
+                        </span>
+                      )}
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>•</span>
                       <span
                         style={{
@@ -246,22 +267,24 @@ export const ActivityFeed: React.FC = () => {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    color: 'var(--success)',
-                    backgroundColor: 'var(--success-light)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '9999px',
-                  }}
-                >
-                  <Award size={13} />
-                  <span>+10 pts</span>
-                </div>
+                {item.countsAsCheckin !== false && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      color: 'var(--success)',
+                      backgroundColor: 'var(--success-light)',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '9999px',
+                    }}
+                  >
+                    <Award size={13} />
+                    <span>+10 pts</span>
+                  </div>
+                )}
               </div>
 
               {/* Caption */}

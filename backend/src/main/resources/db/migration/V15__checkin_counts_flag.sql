@@ -1,0 +1,1 @@
+ALTER TABLE checkins ADD COLUMN counts_as_checkin BOOLEAN NOT NULL DEFAULT TRUE;

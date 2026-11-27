@@ -33,13 +33,15 @@ public class CreateCommentUseCase implements UseCase<CreateCommentCommand, Comme
                 .filter(Checkin::isActive)
                 .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "CHECKIN_NOT_FOUND", "Check-in não encontrado"));
 
-        boolean isMember = communityMemberRepository.isUserActiveMember(checkin.getCommunityId(), command.authorId());
-        if (!isMember) {
-            throw new DomainException(
-                    HttpStatus.FORBIDDEN,
-                    "COMMUNITY_NOT_A_MEMBER",
-                    "Apenas membros ativos da comunidade podem comentar neste check-in"
-            );
+        if (checkin.getCommunityId() != null) {
+            boolean isMember = communityMemberRepository.isUserActiveMember(checkin.getCommunityId(), command.authorId());
+            if (!isMember) {
+                throw new DomainException(
+                        HttpStatus.FORBIDDEN,
+                        "COMMUNITY_NOT_A_MEMBER",
+                        "Apenas membros ativos da comunidade podem comentar neste check-in"
+                );
+            }
         }
 
         if (command.parentCommentId() != null) {

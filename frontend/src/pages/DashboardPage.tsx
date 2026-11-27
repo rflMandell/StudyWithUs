@@ -1,35 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { Award, School, Sparkles, CheckCircle2, History, ArrowUpRight, ArrowDownLeft, Clock } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Award, School, Sparkles, CheckCircle2, History, ArrowUpRight, ArrowDownLeft, Clock, PenSquare } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Navbar } from '../components/Navbar';
 import { ActivityFeed } from '../components/ActivityFeed';
+import { CreatePostModal } from '../components/CreatePostModal';
 import { PointTransaction, UserPointsSummary } from '../types/points';
 import { pointsService } from '../services/pointsService';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [pointsSummary, setPointsSummary] = useState<UserPointsSummary | null>(null);
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [isLoadingPoints, setIsLoadingPoints] = useState(true);
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+  const fetchPoints = useCallback(async () => {
+    try {
+      const [summary, history] = await Promise.all([
+        pointsService.getPointsSummary(),
+        pointsService.getPointsHistory(0, 10),
+      ]);
+      setPointsSummary(summary);
+      setTransactions(history.content);
+    } catch (err) {
+      console.error('Erro ao carregar dados de pontos:', err);
+    } finally {
+      setIsLoadingPoints(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchPoints = async () => {
-      try {
-        const [summary, history] = await Promise.all([
-          pointsService.getPointsSummary(),
-          pointsService.getPointsHistory(0, 10),
-        ]);
-        setPointsSummary(summary);
-        setTransactions(history.content);
-      } catch (err) {
-        console.error('Erro ao carregar dados de pontos:', err);
-      } finally {
-        setIsLoadingPoints(false);
-      }
-    };
-
     fetchPoints();
-  }, []);
+  }, [fetchPoints]);
+
+  const handlePostCreated = async () => {
+    setIsCreatePostOpen(false);
+    setFeedRefreshKey((prev) => prev + 1);
+    await Promise.all([fetchPoints(), refreshUser?.()]);
+  };
 
   if (!user) return null;
 
@@ -37,13 +46,33 @@ export const DashboardPage: React.FC = () => {
     <div>
       <Navbar />
       <main className="container">
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.025em' }}>
-            Olá, {user.name}! 👋
-          </h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Bem-vindo(a) ao StudyWithUs. Sua consistência acadêmica começa aqui.
-          </p>
+        <div
+          style={{
+            marginBottom: '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.025em' }}>
+              Olá, {user.name}! 👋
+            </h1>
+            <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+              Bem-vindo(a) ao StudyWithUs. Sua consistência acadêmica começa aqui.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCreatePostOpen(true)}
+            className="btn btn-primary"
+            style={{ width: 'auto', padding: '0.65rem 1.25rem', gap: '0.5rem' }}
+          >
+            <PenSquare size={18} />
+            <span>Novo Post</span>
+          </button>
         </div>
 
         <div className="grid-cards" style={{ marginBottom: '2rem' }}>
@@ -87,7 +116,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <ActivityFeed />
+        <ActivityFeed refreshKey={feedRefreshKey} />
 
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
@@ -185,6 +214,11 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
       </main>
+      <CreatePostModal
+        isOpen={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        onCreated={handlePostCreated}
+      />
     </div>
   );
 };

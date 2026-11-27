@@ -17,9 +17,25 @@ public record CheckinResult(
         long commentsCount,
         long likesCount,
         boolean likedByCurrentUser,
+        boolean countsAsCheckin,
         Instant createdAt,
         Instant updatedAt
 ) {
+    public CheckinResult(
+            UUID id,
+            UUID userId,
+            UUID communityId,
+            String caption,
+            List<String> mediaKeys,
+            long commentsCount,
+            long likesCount,
+            boolean likedByCurrentUser,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(id, userId, communityId, caption, mediaKeys, commentsCount, likesCount, likedByCurrentUser, true, createdAt, updatedAt);
+    }
+
     public static CheckinResult fromDomain(Checkin checkin) {
         return fromDomain(checkin, 0L, 0L, false);
     }
@@ -47,6 +63,7 @@ public record CheckinResult(
                 commentsCount,
                 likesCount,
                 likedByCurrentUser,
+                checkin.isCountsAsCheckin(),
                 checkin.getCreatedAt(),
                 checkin.getUpdatedAt()
         );

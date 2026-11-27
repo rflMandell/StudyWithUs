@@ -22,6 +22,9 @@ public class XpEventListener {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         try {
             awardXpUseCase.execute(new AwardXpCommand(
                     event.userId(),

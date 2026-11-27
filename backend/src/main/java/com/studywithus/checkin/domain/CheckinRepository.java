@@ -24,6 +24,10 @@ public interface CheckinRepository {
         return findFeedCheckins(communityIds, followingIds, cursorTime, limit);
     }
 
+    default List<Checkin> findFeedCheckins(UUID userId, Collection<UUID> communityIds, Collection<UUID> followingIds, Instant cursorTime, UUID cursorId, int limit) {
+        return findFeedCheckins(communityIds, followingIds, cursorTime, cursorId, limit);
+    }
+
     default List<Checkin> findAllActiveByIds(Collection<UUID> ids) {
         return List.of();
     }

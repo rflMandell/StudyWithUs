@@ -1,0 +1,1 @@
+ALTER TABLE checkins ALTER COLUMN community_id DROP NOT NULL;

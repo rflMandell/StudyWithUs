@@ -27,6 +27,9 @@ public class LeagueEventListener {
 
     @EventListener
     public void onCheckinCreated(CheckinCreatedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         try {
             long score = BASE_CHECKIN_SCORE;
             Checkin checkin = checkinRepository.findById(event.checkinId()).orElse(null);
@@ -46,6 +49,9 @@ public class LeagueEventListener {
 
     @EventListener
     public void onCheckinDeleted(CheckinDeletedEvent event) {
+        if (!event.countsAsCheckin()) {
+            return;
+        }
         try {
             recordLeagueScoreUseCase.execute(event.userId(), -BASE_CHECKIN_SCORE);
         } catch (Exception e) {

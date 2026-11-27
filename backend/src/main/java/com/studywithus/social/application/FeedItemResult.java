@@ -20,8 +20,48 @@ public record FeedItemResult(
         long commentsCount,
         long likesCount,
         boolean likedByCurrentUser,
+        boolean countsAsCheckin,
         Instant createdAt
 ) {
+    public FeedItemResult(
+            UUID id,
+            UUID userId,
+            String authorUsername,
+            String authorName,
+            String authorAvatarUrl,
+            int authorLevel,
+            String authorTitle,
+            String authorAvatarBorder,
+            UUID communityId,
+            String communityName,
+            String caption,
+            List<String> mediaKeys,
+            long commentsCount,
+            long likesCount,
+            boolean likedByCurrentUser,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                userId,
+                authorUsername,
+                authorName,
+                authorAvatarUrl,
+                authorLevel,
+                authorTitle,
+                authorAvatarBorder,
+                communityId,
+                communityName,
+                caption,
+                mediaKeys,
+                commentsCount,
+                likesCount,
+                likedByCurrentUser,
+                true,
+                createdAt
+        );
+    }
+
     public FeedItemResult(
             UUID id,
             UUID userId,
@@ -54,6 +94,7 @@ public record FeedItemResult(
                 commentsCount,
                 0L,
                 false,
+                true,
                 createdAt
         );
     }

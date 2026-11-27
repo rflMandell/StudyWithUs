@@ -68,21 +68,27 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
             }
         }
 
-        Community community = communityRepository.findById(command.communityId())
-                .filter(Community::isActive)
-                .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
+        if (command.communityId() != null) {
+            Community community = communityRepository.findById(command.communityId())
+                    .filter(Community::isActive)
+                    .orElseThrow(() -> new DomainException(HttpStatus.NOT_FOUND, "COMMUNITY_NOT_FOUND", "Community not found"));
 
-        CommunityMember member = communityMemberRepository.findByCommunityIdAndUserId(command.communityId(), command.userId())
-                .filter(CommunityMember::isActive)
-                .orElseThrow(() -> new DomainException(
-                        HttpStatus.FORBIDDEN,
-                        "COMMUNITY_NOT_A_MEMBER",
-                        "User must be an active member of the community to create a check-in"
-                ));
+            CommunityMember member = communityMemberRepository.findByCommunityIdAndUserId(command.communityId(), command.userId())
+                    .filter(CommunityMember::isActive)
+                    .orElseThrow(() -> new DomainException(
+                            HttpStatus.FORBIDDEN,
+                            "COMMUNITY_NOT_A_MEMBER",
+                            "User must be an active member of the community to create a check-in"
+                    ));
+        }
 
         if (command.mediaKeys() != null && !command.mediaKeys().isEmpty()) {
             validateMediaOwnershipUseCase.validateStorageKeys(command.mediaKeys(), command.userId(), MediaPurpose.CHECKIN);
         }
+
+        boolean countsAsCheckin = command.communityId() != null
+                || command.countsAsCheckin() == null
+                || command.countsAsCheckin();
 
         Checkin checkin = Checkin.create(
                 command.userId(),
@@ -91,7 +97,8 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
                 command.mediaKeys(),
                 command.subject(),
                 command.tags(),
-                command.durationMinutes()
+                command.durationMinutes(),
+                countsAsCheckin
         );
 
         Checkin saved = checkinRepository.save(checkin);
@@ -104,17 +111,20 @@ public class CreateCheckinUseCase implements UseCase<CreateCheckinCommand, Check
                 saved.getId(),
                 saved.getUserId(),
                 saved.getCommunityId(),
-                saved.getCreatedAt()
+                saved.getCreatedAt(),
+                saved.isCountsAsCheckin()
         ));
-        eventPublisher.publishEvent(new StudyActivityRecordedEvent(
-                saved.getId(),
-                saved.getUserId(),
-                saved.getCommunityId(),
-                saved.getSubject(),
-                saved.getTags(),
-                saved.getDurationMinutes(),
-                saved.getCreatedAt()
-        ));
+        if (saved.isCountsAsCheckin()) {
+            eventPublisher.publishEvent(new StudyActivityRecordedEvent(
+                    saved.getId(),
+                    saved.getUserId(),
+                    saved.getCommunityId(),
+                    saved.getSubject(),
+                    saved.getTags(),
+                    saved.getDurationMinutes(),
+                    saved.getCreatedAt()
+            ));
+        }
 
         return CheckinResult.fromDomain(saved);
     }

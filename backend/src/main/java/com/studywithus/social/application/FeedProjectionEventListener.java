@@ -141,6 +141,13 @@ public class FeedProjectionEventListener {
     }
 
     private Set<UUID> resolveRecipients(UUID communityId, UUID authorId) {
+        if (communityId == null) {
+            Set<UUID> recipients = new LinkedHashSet<>();
+            recipients.add(authorId);
+            recipients.addAll(followRepository.findFollowerIdsByFollowingId(authorId));
+            return recipients;
+        }
+
         Set<UUID> recipients = new LinkedHashSet<>(communityMemberRepository.findActiveUserIdsByCommunityId(communityId));
         recipients.add(authorId);
 

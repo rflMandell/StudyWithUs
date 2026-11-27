@@ -98,10 +98,22 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
             UUID cursorId,
             int limit
     ) {
+        return findFeedCheckins(null, communityIds, followingIds, cursorTime, cursorId, limit);
+    }
+
+    @Override
+    public List<Checkin> findFeedCheckins(
+            UUID userId,
+            Collection<UUID> communityIds,
+            Collection<UUID> followingIds,
+            Instant cursorTime,
+            UUID cursorId,
+            int limit
+    ) {
         boolean hasCommunities = communityIds != null && !communityIds.isEmpty();
         boolean hasFollowing = followingIds != null && !followingIds.isEmpty();
 
-        if (!hasCommunities && !hasFollowing) {
+        if (!hasCommunities && !hasFollowing && userId == null) {
             return Collections.emptyList();
         }
 
@@ -110,27 +122,33 @@ public class CheckinRepositoryAdapter implements CheckinRepository {
 
         if (cursorTime == null) {
             if (hasCommunities && hasFollowing) {
-                entities = repository.findFeedByCommunitiesAndFollowing(communityIds, followingIds, pageable);
+                entities = repository.findFeedByCommunitiesAndFollowing(userId, communityIds, followingIds, pageable);
             } else if (hasCommunities) {
-                entities = repository.findFeedByCommunities(communityIds, pageable);
+                entities = repository.findFeedByCommunities(userId, communityIds, pageable);
+            } else if (hasFollowing) {
+                entities = repository.findFeedByFollowing(userId, followingIds, pageable);
             } else {
-                entities = repository.findFeedByFollowing(followingIds, pageable);
+                entities = repository.findFeedByStandalone(userId, pageable);
             }
         } else if (cursorId == null) {
             if (hasCommunities && hasFollowing) {
-                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursorTime, pageable);
+                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(userId, communityIds, followingIds, cursorTime, pageable);
             } else if (hasCommunities) {
-                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursorTime, pageable);
+                entities = repository.findFeedByCommunitiesWithCursor(userId, communityIds, cursorTime, pageable);
+            } else if (hasFollowing) {
+                entities = repository.findFeedByFollowingWithCursor(userId, followingIds, cursorTime, pageable);
             } else {
-                entities = repository.findFeedByFollowingWithCursor(followingIds, cursorTime, pageable);
+                entities = repository.findFeedByStandaloneWithCursor(userId, cursorTime, pageable);
             }
         } else {
             if (hasCommunities && hasFollowing) {
-                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(communityIds, followingIds, cursorTime, cursorId, pageable);
+                entities = repository.findFeedByCommunitiesAndFollowingWithCursor(userId, communityIds, followingIds, cursorTime, cursorId, pageable);
             } else if (hasCommunities) {
-                entities = repository.findFeedByCommunitiesWithCursor(communityIds, cursorTime, cursorId, pageable);
+                entities = repository.findFeedByCommunitiesWithCursor(userId, communityIds, cursorTime, cursorId, pageable);
+            } else if (hasFollowing) {
+                entities = repository.findFeedByFollowingWithCursor(userId, followingIds, cursorTime, cursorId, pageable);
             } else {
-                entities = repository.findFeedByFollowingWithCursor(followingIds, cursorTime, cursorId, pageable);
+                entities = repository.findFeedByStandaloneWithCursor(userId, cursorTime, cursorId, pageable);
             }
         }
 

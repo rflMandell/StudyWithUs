@@ -28,6 +28,7 @@ import { userService } from '../services/userService';
 import { followService } from '../services/followService';
 import { mediaService } from '../services/mediaService';
 import { AlertError } from '../components/AlertError';
+import { CommentSection } from '../components/CommentSection';
 
 export const ProfilePage: React.FC = () => {
   const { user: authUser, updateUser } = useAuth();
@@ -970,7 +971,7 @@ export const ProfilePage: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {item.communityName ? (
+                    {item.communityId && item.communityName ? (
                       <Link
                         to={`/communities/${item.communityId}`}
                         style={{
@@ -990,7 +991,20 @@ export const ProfilePage: React.FC = () => {
                         {item.communityName}
                       </Link>
                     ) : (
-                      <span />
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 500,
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-muted)',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        Post pessoal
+                      </span>
                     )}
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Clock size={12} />
@@ -1020,6 +1034,14 @@ export const ProfilePage: React.FC = () => {
                       ))}
                     </div>
                   )}
+                  <CommentSection
+                    checkinId={item.id}
+                    initialCommentsCount={item.commentsCount || 0}
+                    initialLikesCount={item.likesCount || 0}
+                    initialLikedByCurrentUser={Boolean(item.likedByCurrentUser)}
+                    isMember={true}
+                    currentUserId={authUser?.id}
+                  />
                 </div>
               ))}
             </div>
